@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Physics-Informed Battery SoH Prognostics | NASA PCoE</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <h1>🔋 Battery SoH Prognostics</h1>
+      <span class="badge badge-cyan">NASA PCoE 18650</span>
+      <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">Physics-Informed</span>
+    </div>
+    <div class="status-indicator">
+      <span class="status-dot"></span>
+      <span id="apiStatusText">Engine Online (632 Cycles Loaded)</span>
+    </div>
+  </header>
+
+  <!-- View Switcher Tabs -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" data-tab="tab-simulator">🧪 Model Testing & Simulator</button>
+    <button class="tab-btn" data-tab="tab-cycles">📈 NASA Cycle & Waveform Explorer</button>
+    <button class="tab-btn" data-tab="tab-benchmark">📊 LOBO Benchmark & Figures</button>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- ============================================================ -->
+    <!-- TAB 1: MODEL TESTING & SENSITIVITY WORKBENCH                 -->
+    <!-- ============================================================ -->
+    <div id="tab-simulator" class="tab-content active">
+      
+      <!-- Preset Selection Group -->
+      <div class="preset-bar">
+        <span class="preset-title">Aging Presets:</span>
+        <div class="preset-buttons">
+          <button class="preset-btn" data-preset="fresh_cell">🟢 Fresh Cell (Cycle 2, 92.6% SoH)</button>
+          <button class="preset-btn" data-preset="mid_life">🟡 Mid-Life (Cycle ~80, 82.0% SoH)</button>
+          <button class="preset-btn" data-preset="near_eol">🟠 Near-EoL (Cycle ~140, 70.5% SoH)</button>
+          <button class="preset-btn" data-preset="degraded">🔴 Degraded (Cycle ~165, 64.5% SoH)</button>
+          <button class="preset-btn" data-preset="regeneration_spike">⚡ Rest Regeneration (Δt=309h)</button>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+
+        <!-- Left Column: Feature Controls -->
+        <div class="controls-column">
+          <div class="card">
+            <div class="card-title">
+              <span>Physical Degradation Features</span>
+              <span id="activePresetLabel" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 500;">Custom Inputs</span>
+            </div>
+
+            <!-- t_cc -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">Constant-Current Duration <span class="math-sub">(t<sub>cc</sub>)</span></span>
+                <span class="feature-value" id="val-t_cc">2850 s</span>
+              </div>
+              <input type="range" class="slider" id="slider-t_cc" min="800" max="4200" step="10" value="2850">
+            </div>
+
+            <!-- t_cv -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">Constant-Voltage Duration <span class="math-sub">(t<sub>cv</sub>)</span></span>
+                <span class="feature-value" id="val-t_cv">6200 s</span>
+              </div>
+              <input type="range" class="slider" id="slider-t_cv" min="2000" max="9500" step="20" value="6200">
+            </div>
+
+            <!-- dq_dv_peak -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">IC Peak Amplitude <span class="math-sub">((dQ/dV)<sub>peak</sub>)</span></span>
+                <span class="feature-value" id="val-dq_dv_peak">4.60 Ah/V</span>
+              </div>
+              <input type="range" class="slider" id="slider-dq_dv_peak" min="1.0" max="7.0" step="0.05" value="4.60">
+            </div>
+
+            <!-- v_at_peak -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">Voltage at Peak <span class="math-sub">(V<sub>peak</sub>)</span></span>
+                <span class="feature-value" id="val-v_at_peak">3.985 V</span>
+              </div>
+              <input type="range" class="slider" id="slider-v_at_peak" min="3.85" max="4.15" step="0.005" value="3.985">
+            </div>
+
+            <!-- delta_T_max -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">Max Temperature Rise <span class="math-sub">(ΔT<sub>max</sub>)</span></span>
+                <span class="feature-value" id="val-delta_T_max">14.2 °C</span>
+              </div>
+              <input type="range" class="slider" id="slider-delta_T_max" min="8.0" max="22.0" step="0.1" value="14.2">
+            </div>
+
+            <!-- delta_V_ohmic -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">Initial Ohmic Drop <span class="math-sub">(ΔV<sub>ohmic</sub>)</span></span>
+                <span class="feature-value" id="val-delta_V_ohmic">0.220 V</span>
+              </div>
+              <input type="range" class="slider" id="slider-delta_V_ohmic" min="0.12" max="0.38" step="0.005" value="0.220">
+            </div>
+
+            <!-- Re -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">Electrolyte Resistance <span class="math-sub">(R<sub>e</sub>)</span></span>
+                <span class="feature-value" id="val-Re">0.052 Ω</span>
+              </div>
+              <input type="range" class="slider" id="slider-Re" min="0.02" max="0.12" step="0.001" value="0.052">
+            </div>
+
+            <!-- Rct -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">Charge-Transfer Resistance <span class="math-sub">(R<sub>ct</sub>)</span></span>
+                <span class="feature-value" id="val-Rct">0.075 Ω</span>
+              </div>
+              <input type="range" class="slider" id="slider-Rct" min="0.03" max="0.22" step="0.002" value="0.075">
+            </div>
+
+            <!-- rest_time_hours -->
+            <div class="feature-control">
+              <div class="feature-header">
+                <span class="feature-label">Rest Duration <span class="math-sub">(t<sub>rest</sub>)</span></span>
+                <span class="feature-value" id="val-rest_time_hours">3.5 h</span>
+              </div>
+              <input type="range" class="slider" id="slider-rest_time_hours" min="0.1" max="320.0" step="0.5" value="3.5">
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right Column: Model Inference & Diagnostics -->
+        <div class="results-column">
+
+          <!-- Health Status Banner -->
+          <div id="healthBanner" class="status-banner status-optimal">
+            <div>
+              <strong id="healthTitle">CELL HEALTH: OPTIMAL</strong>
+              <div id="healthDesc" style="font-size: 0.8rem; opacity: 0.9;">Battery operates safely above the 70% End-of-Life threshold (1.4 Ah).</div>
+            </div>
+            <div id="healthSoHVal" style="font-size: 1.7rem; font-weight: 700; font-family: var(--font-mono);">88.4%</div>
+          </div>
+
+          <!-- Predictions Grid Across 5 Models -->
+          <div class="predictions-grid">
+            
+            <!-- Featured Primary GPR Model -->
+            <div class="model-card featured">
+              <div class="featured-content">
+                <div>
+                  <div class="model-name">Gaussian Process Regressor (GPR) · Primary Physics Model</div>
+                  <div class="model-uncertainty" id="unc-GPR">95% Epistemic CI: [84.2%, 92.6%]</div>
+                </div>
+                <div class="model-val" id="pred-GPR" style="color: var(--accent-blue); font-size: 2.1rem;">88.40%</div>
+              </div>
+            </div>
+
+            <div class="model-card">
+              <div class="model-name">Ridge Baseline</div>
+              <div class="model-val" id="pred-Ridge">--</div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Linear L₂ Penalty</div>
+            </div>
+
+            <div class="model-card">
+              <div class="model-name">ElasticNet</div>
+              <div class="model-val" id="pred-ElasticNet">--</div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Sparse L₁ + L₂</div>
+            </div>
+
+            <div class="model-card">
+              <div class="model-name">XGBoost</div>
+              <div class="model-val" id="pred-XGBoost">--</div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Tree Ensembles</div>
+            </div>
+
+            <div class="model-card">
+              <div class="model-name">SVR (RBF)</div>
+              <div class="model-val" id="pred-SVR">--</div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Kernel Dual-Space</div>
+            </div>
+
+          </div>
+
+          <!-- Live Physical Sensitivities Chart -->
+          <div class="card">
+            <div class="card-title">
+              <span>Physical Jacobian Sensitivities <span class="math-sub">(∂SoH / ∂x<sub>i</sub>)</span></span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Thermodynamic Sign Audit</span>
+            </div>
+            <div class="chart-container" style="height: 270px;">
+              <canvas id="jacobianChart"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 2: NASA CYCLE & WAVEFORM EXPLORER                        -->
+    <!-- ============================================================ -->
+    <div id="tab-cycles" class="tab-content">
+      
+      <div class="card" style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;">
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Battery Cell</label>
+          <select id="cellSelect" class="select-control">
+            <option value="B0005">B0005 (167 Cycles, Reached EoL)</option>
+            <option value="B0006">B0006 (167 Cycles, Reached EoL)</option>
+            <option value="B0007">B0007 (167 Cycles, Active)</option>
+            <option value="B0018">B0018 (131 Cycles, Reached EoL)</option>
+          </select>
+        </div>
+
+        <div style="flex-grow: 1; min-width: 240px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.25rem;">
+            <span style="color: var(--text-muted);">Cycle Number</span>
+            <span id="cycleNumDisplay" style="font-family: var(--font-mono); font-weight: 600; color: var(--accent-blue);">Cycle 10</span>
+          </div>
+          <input type="range" class="slider" id="cycleScrubber" min="2" max="168" value="10">
+        </div>
+
+        <button id="btnLoadCycle" class="btn-primary" style="margin-top: 0.6rem;">📥 Load into Simulator</button>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <div class="card-title">
+            <span>CC-CV Charge Waveform (V & I)</span>
+            <span id="chargeInfoBadge" style="font-size: 0.78rem; color: var(--text-muted);">1.5A CC → 4.2V Cutoff</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chargeWaveformChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Incremental Capacity (dQ/dV) Profile</span>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Savitzky-Golay Denoised</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="icCurveChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 3: LOBO BENCHMARK & FIGURES GALLERY                     -->
+    <!-- ============================================================ -->
+    <div id="tab-benchmark" class="tab-content">
+      
+      <div class="card">
+        <div class="card-title">
+          <span>Leave-One-Battery-Out (LOBO) 4-Fold Cross-Validation Benchmark</span>
+          <span class="badge badge-cyan">Zero Data Leakage</span>
+        </div>
+        
+        <div class="data-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Mean RMSE (%)</th>
+                <th>Mean MAE (%)</th>
+                <th>Mean R²</th>
+                <th>Max Error (%)</th>
+                <th>Electrochemical Characteristics</th>
+              </tr>
+            </thead>
+            <tbody id="loboTableBody">
+              <tr>
+                <td><strong>Ridge</strong></td>
+                <td style="color: var(--accent-green); font-weight: 600;">1.922 ± 0.622</td>
+                <td>1.530 ± 0.558</td>
+                <td>0.9560</td>
+                <td>3.85%</td>
+                <td>Closed-form linear weights; exact physical Jacobian ∂SoH / ∂x<sub>i</sub></td>
+              </tr>
+              <tr>
+                <td><strong>ElasticNet</strong></td>
+                <td>2.295 ± 1.180</td>
+                <td>1.944 ± 1.164</td>
+                <td>0.9384</td>
+                <td>4.62%</td>
+                <td>Sparse mixed L₁ / L₂ regularization</td>
+              </tr>
+              <tr>
+                <td><strong>Gaussian Process (GPR)</strong></td>
+                <td>2.704 ± 1.249</td>
+                <td>2.137 ± 1.013</td>
+                <td>0.9085</td>
+                <td>5.14%</td>
+                <td>95% epistemic confidence intervals (±1.96σ), 90.6% empirical coverage</td>
+              </tr>
+              <tr>
+                <td><strong>XGBoost</strong></td>
+                <td>2.784 ± 1.261</td>
+                <td>2.359 ± 1.104</td>
+                <td>0.9131</td>
+                <td>5.48%</td>
+                <td>Non-linear feature interactions with TreeSHAP attributions</td>
+              </tr>
+              <tr>
+                <td><strong>SVR (RBF Kernel)</strong></td>
+                <td>4.380 ± 3.152</td>
+                <td>3.357 ± 2.287</td>
+                <td>0.7609</td>
+                <td>8.92%</td>
+                <td>Nonlinear dual-space kernel mapping</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Generated Publication Diagnostics & Theoretical Proofs</span>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Outputs in outputs/figures/</span>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+          <div style="background: var(--bg-secondary); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;">1. Degradation & Diffusion Regeneration</div>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">Quantifies diffusion relaxation spikes after rest (e.g. +0.044 Ah in B0005 after 309.5h rest).</p>
+          </div>
+          <div style="background: var(--bg-secondary); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;">2. Incremental Capacity Profile (dQ/dV)</div>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">Demonstrates (dQ/dV)<sub>peak</sub> collapse (LAM/LLI) and ohmic voltage shift across cycles 10-160.</p>
+          </div>
+          <div style="background: var(--bg-secondary); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;">3. Thevenin Terminal Voltage Dynamics</div>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">Proves why V<sub>term</sub> = V<sub>OCV</sub> + I · R<sub>int</sub> trips 4.2V cutoff earlier, shrinking t<sub>cc</sub> and expanding t<sub>cv</sub>.</p>
+          </div>
+          <div style="background: var(--bg-secondary); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;">4. Joule Heating Law Verification</div>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">Verifies Q<sub>heat</sub> = ∫ I² (R<sub>e</sub> + R<sub>ct</sub>) dt and justifies negative ΔT<sub>max</sub> sensitivity.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
