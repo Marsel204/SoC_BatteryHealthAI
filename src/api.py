@@ -373,6 +373,65 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+figures_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "outputs", "figures"))
+if os.path.exists(figures_dir):
+    app.mount("/outputs/figures", StaticFiles(directory=figures_dir), name="figures")
+
+
+@app.get("/api/figures")
+def get_figures_catalog() -> List[Dict[str, str]]:
+    """Return catalog of 6 high-DPI publication diagnostics."""
+    return [
+        {
+            "id": "degradation_regeneration",
+            "filename": "stage1_degradation_regeneration.png",
+            "title": "Stage 1: Degradation Trajectories & Diffusion Regeneration",
+            "stage": "Stage 1: Data Parsing",
+            "description": "Quantifies SoH capacity fade across 4 cells and lithium diffusion relaxation recovery spikes (+0.044 Ah in B0005 after 309.5h rest).",
+            "url": "/outputs/figures/stage1_degradation_regeneration.png",
+        },
+        {
+            "id": "incremental_capacity",
+            "filename": "stage1_incremental_capacity_evolution.png",
+            "title": "Stage 1: Incremental Capacity Evolution (dQ/dV)",
+            "stage": "Stage 1: Feature Extraction",
+            "description": "Tracks graphite/NMC phase transition peak attenuation (LAM/LLI) and rightward ohmic overpotential displacement across cycles 10–160.",
+            "url": "/outputs/figures/stage1_incremental_capacity_evolution.png",
+        },
+        {
+            "id": "thevenin_dynamics",
+            "filename": "stage4_thevenin_charging_dynamics.png",
+            "title": "Stage 4: Thevenin Terminal Voltage Dynamics",
+            "stage": "Stage 4: Mathematical Justification",
+            "description": "Verifies that rising internal impedance trips the 4.2V ceiling earlier, compressing constant-current duration t_cc and expanding constant-voltage duration t_cv.",
+            "url": "/outputs/figures/stage4_thevenin_charging_dynamics.png",
+        },
+        {
+            "id": "joule_heating",
+            "filename": "stage4_joule_heating_law.png",
+            "title": "Stage 4: Joule Heating Law Verification",
+            "stage": "Stage 4: Mathematical Justification",
+            "description": "Validates thermodynamic energy dissipation Q_heat = integral(I^2 R dt) and justifies the negative sensitivity of peak temperature rise delta_T_max.",
+            "url": "/outputs/figures/stage4_joule_heating_law.png",
+        },
+        {
+            "id": "lobo_predictions_uncertainty",
+            "filename": "stage3_lobo_predictions_uncertainty.png",
+            "title": "Stage 3: LOBO Cross-Validation & Epistemic Uncertainty",
+            "stage": "Stage 3: Evaluation",
+            "description": "4-Panel Leave-One-Battery-Out cross-validation parity curves featuring Gaussian Process 95% epistemic confidence intervals (±1.96 sigma).",
+            "url": "/outputs/figures/stage3_lobo_predictions_uncertainty.png",
+        },
+        {
+            "id": "interpretability_shap_jacobian",
+            "filename": "stage4_interpretability_shap_jacobian.png",
+            "title": "Stage 4: Model Interpretability, SHAP & Jacobian Sensitivities",
+            "stage": "Stage 4: Sensitivity Audit",
+            "description": "Comparative diagnostic of standardized Ridge weights, XGBoost TreeSHAP attributions, and exact analytical Jacobian sensitivities.",
+            "url": "/outputs/figures/stage4_interpretability_shap_jacobian.png",
+        },
+    ]
+
 
 @app.get("/")
 def serve_index():
@@ -380,3 +439,4 @@ def serve_index():
     if os.path.exists(index_file):
         return FileResponse(index_file)
     return {"message": "Battery SoH Prognostics API is online. UI available at /static/index.html"}
+

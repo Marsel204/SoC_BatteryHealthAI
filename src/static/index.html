@@ -14,15 +14,20 @@
     <div class="header-brand">
       <h1>🔋 Battery SoH Prognostics</h1>
       <span class="badge badge-cyan">NASA PCoE 18650</span>
-      <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">Physics-Informed</span>
+      <span class="badge" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">Physics-Informed</span>
     </div>
-    <div class="status-indicator">
-      <span class="status-dot"></span>
-      <span id="apiStatusText">Engine Online (632 Cycles Loaded)</span>
+    
+    <div class="header-actions">
+      <button id="btnOpenReport" class="btn-action">📄 Export Exam Report</button>
+      <button id="btnQuickLightroom" class="btn-action">🖼️ Figures Lightroom</button>
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span id="apiStatusText">Engine Ready (632 Cycles)</span>
+      </div>
     </div>
   </header>
 
-  <!-- View Switcher Tabs -->
+  <!-- Navigation View Tabs -->
   <nav class="nav-tabs">
     <button class="tab-btn active" data-tab="tab-simulator">🧪 Model Testing & Simulator</button>
     <button class="tab-btn" data-tab="tab-cycles">📈 NASA Cycle & Waveform Explorer</button>
@@ -39,14 +44,17 @@
       
       <!-- Preset Selection Group -->
       <div class="preset-bar">
-        <span class="preset-title">Aging Presets:</span>
-        <div class="preset-buttons">
-          <button class="preset-btn" data-preset="fresh_cell">🟢 Fresh Cell (Cycle 2, 92.6% SoH)</button>
-          <button class="preset-btn" data-preset="mid_life">🟡 Mid-Life (Cycle ~80, 82.0% SoH)</button>
-          <button class="preset-btn" data-preset="near_eol">🟠 Near-EoL (Cycle ~140, 70.5% SoH)</button>
-          <button class="preset-btn" data-preset="degraded">🔴 Degraded (Cycle ~165, 64.5% SoH)</button>
-          <button class="preset-btn" data-preset="regeneration_spike">⚡ Rest Regeneration (Δt=309h)</button>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span class="preset-title">Aging Presets:</span>
+          <div class="preset-buttons">
+            <button class="preset-btn" data-preset="fresh_cell">🟢 Fresh Cell (Cycle 2, 92.6% SoH)</button>
+            <button class="preset-btn" data-preset="mid_life">🟡 Mid-Life (Cycle ~80, 82.0% SoH)</button>
+            <button class="preset-btn" data-preset="near_eol">🟠 Near-EoL (Cycle ~140, 70.5% SoH)</button>
+            <button class="preset-btn" data-preset="degraded">🔴 Degraded (Cycle ~165, 64.5% SoH)</button>
+            <button class="preset-btn" data-preset="regeneration_spike">⚡ Rest Regeneration (Δt=309h)</button>
+          </div>
         </div>
+        <button id="btnResetParams" class="btn-action" style="padding: 0.28rem 0.6rem; font-size: 0.75rem;">↺ Reset Defaults</button>
       </div>
 
       <div class="grid-2col">
@@ -152,39 +160,48 @@
               <strong id="healthTitle">CELL HEALTH: OPTIMAL</strong>
               <div id="healthDesc" style="font-size: 0.8rem; opacity: 0.9;">Battery operates safely above the 70% End-of-Life threshold (1.4 Ah).</div>
             </div>
-            <div id="healthSoHVal" style="font-size: 1.7rem; font-weight: 700; font-family: var(--font-mono);">88.4%</div>
+            <div id="healthSoHVal" style="font-size: 1.75rem; font-weight: 700; font-family: var(--font-mono);">88.4%</div>
           </div>
 
-          <!-- Predictions Grid Across 5 Models -->
-          <div class="predictions-grid">
+          <!-- Featured Primary GPR Model with Gaussian Epistemic Distribution -->
+          <div class="card" style="border-color: rgba(56, 189, 248, 0.35); background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(18, 27, 46, 0.85) 100%);">
+            <div class="card-title">
+              <span>Primary Physics Model: Gaussian Process Regression (GPR)</span>
+              <span class="badge badge-cyan">Epistemic Uncertainty</span>
+            </div>
             
-            <!-- Featured Primary GPR Model -->
-            <div class="model-card featured">
-              <div class="featured-content">
-                <div>
-                  <div class="model-name">Gaussian Process Regressor (GPR) · Primary Physics Model</div>
-                  <div class="model-uncertainty" id="unc-GPR">95% Epistemic CI: [84.2%, 92.6%]</div>
-                </div>
-                <div class="model-val" id="pred-GPR" style="color: var(--accent-blue); font-size: 2.1rem;">88.40%</div>
+            <div class="hero-model-container">
+              <div class="hero-stats">
+                <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Estimated State of Health</div>
+                <div class="model-val" id="pred-GPR" style="color: var(--accent-blue); font-size: 2.2rem;">88.40%</div>
+                <div class="model-uncertainty" id="unc-GPR">95% Epistemic CI: [84.20%, 92.60%]</div>
+                <div id="eolProbText" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.35rem; font-family: var(--font-mono);">P(SoH ≤ 70% EoL): &lt; 0.01%</div>
+              </div>
+
+              <div class="hero-curve-box">
+                <canvas id="uncertaintyCurveChart"></canvas>
               </div>
             </div>
+          </div>
 
+          <!-- Comparison Models Grid -->
+          <div class="predictions-grid">
             <div class="model-card">
               <div class="model-name">Ridge Baseline</div>
               <div class="model-val" id="pred-Ridge">--</div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Linear L₂ Penalty</div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Linear L₂ Closed-Form</div>
             </div>
 
             <div class="model-card">
               <div class="model-name">ElasticNet</div>
               <div class="model-val" id="pred-ElasticNet">--</div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Sparse L₁ + L₂</div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Sparse Mixed L₁ + L₂</div>
             </div>
 
             <div class="model-card">
               <div class="model-name">XGBoost</div>
               <div class="model-val" id="pred-XGBoost">--</div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Tree Ensembles</div>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Nonlinear Trees</div>
             </div>
 
             <div class="model-card">
@@ -192,7 +209,6 @@
               <div class="model-val" id="pred-SVR">--</div>
               <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Kernel Dual-Space</div>
             </div>
-
           </div>
 
           <!-- Live Physical Sensitivities Chart -->
@@ -201,7 +217,7 @@
               <span>Physical Jacobian Sensitivities <span class="math-sub">(∂SoH / ∂x<sub>i</sub>)</span></span>
               <span style="font-size: 0.75rem; color: var(--text-muted);">Thermodynamic Sign Audit</span>
             </div>
-            <div class="chart-container" style="height: 270px;">
+            <div class="chart-container" style="height: 250px;">
               <canvas id="jacobianChart"></canvas>
             </div>
           </div>
@@ -268,6 +284,7 @@
     <!-- ============================================================ -->
     <div id="tab-benchmark" class="tab-content">
       
+      <!-- LOBO Performance Table -->
       <div class="card">
         <div class="card-title">
           <span>Leave-One-Battery-Out (LOBO) 4-Fold Cross-Validation Benchmark</span>
@@ -332,36 +349,63 @@
         </div>
       </div>
 
+      <!-- High-DPI Publication Figures Lightroom Grid -->
       <div class="card">
         <div class="card-title">
-          <span>Generated Publication Diagnostics & Theoretical Proofs</span>
-          <span style="font-size: 0.78rem; color: var(--text-muted);">Outputs in outputs/figures/</span>
+          <span>High-Resolution Publication Diagnostics & Theoretical Proofs</span>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Outputs in outputs/figures/ (300 DPI)</span>
         </div>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
-          <div style="background: var(--bg-secondary); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;">1. Degradation & Diffusion Regeneration</div>
-            <p style="font-size: 0.78rem; color: var(--text-muted);">Quantifies diffusion relaxation spikes after rest (e.g. +0.044 Ah in B0005 after 309.5h rest).</p>
-          </div>
-          <div style="background: var(--bg-secondary); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;">2. Incremental Capacity Profile (dQ/dV)</div>
-            <p style="font-size: 0.78rem; color: var(--text-muted);">Demonstrates (dQ/dV)<sub>peak</sub> collapse (LAM/LLI) and ohmic voltage shift across cycles 10-160.</p>
-          </div>
-          <div style="background: var(--bg-secondary); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;">3. Thevenin Terminal Voltage Dynamics</div>
-            <p style="font-size: 0.78rem; color: var(--text-muted);">Proves why V<sub>term</sub> = V<sub>OCV</sub> + I · R<sub>int</sub> trips 4.2V cutoff earlier, shrinking t<sub>cc</sub> and expanding t<sub>cv</sub>.</p>
-          </div>
-          <div style="background: var(--bg-secondary); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem;">4. Joule Heating Law Verification</div>
-            <p style="font-size: 0.78rem; color: var(--text-muted);">Verifies Q<sub>heat</sub> = ∫ I² (R<sub>e</sub> + R<sub>ct</sub>) dt and justifies negative ΔT<sub>max</sub> sensitivity.</p>
-          </div>
+        <div class="figures-grid" id="figuresGalleryContainer">
+          <!-- Dynamically populated via /api/figures -->
         </div>
-
       </div>
 
     </div>
 
   </main>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: HIGH-RESOLUTION LIGHTROOM                             -->
+  <!-- ============================================================ -->
+  <div id="lightboxModal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <span id="modalFigStage" class="badge badge-cyan" style="margin-bottom: 0.2rem; display: inline-block;">STAGE</span>
+          <h2 id="modalFigTitle" style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);">Figure Title</h2>
+        </div>
+        <button class="modal-close-btn" id="btnCloseLightbox">&times;</button>
+      </div>
+      <div class="modal-body">
+        <img id="modalFigImg" src="" alt="Diagnostic Figure" class="lightbox-img-full">
+        <p id="modalFigDesc" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1rem; max-width: 850px; text-align: center; line-height: 1.5;"></p>
+        <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
+          <a id="btnDownloadFig" href="" download class="btn-primary">⬇️ Download High-DPI Figure (300 DPI)</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: EXAM PROGNOSTICS REPORT EXPORT                        -->
+  <!-- ============================================================ -->
+  <div id="reportModal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);">📄 University Exam Prognostics Diagnostic Report</h2>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button id="btnPrintReport" class="btn-primary">🖨️ Print / Save as PDF</button>
+          <button class="modal-close-btn" id="btnCloseReport">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="printable-report" id="reportContentArea">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/app.js"></script>
 </body>

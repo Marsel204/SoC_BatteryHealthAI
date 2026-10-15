@@ -1,12 +1,15 @@
-// Physics-Informed Battery SoH Prognostics - Client Controller
+// Physics-Informed Battery SoH Prognostics - Lead Engineering Controller
 
 let presets = {};
 let featureStats = {};
+let figuresCatalog = [];
 let jacobianChart = null;
+let uncertaintyChart = null;
 let chargeChart = null;
 let icChart = null;
 let debounceTimer = null;
 let currentLoadedCycleFeatures = null;
+let latestPredictionData = null;
 
 const FEATURE_NAMES = [
   "t_cc",
@@ -32,15 +35,29 @@ const FEATURE_LABELS = {
   rest_time_hours: "t_rest (Relax)",
 };
 
+const DEFAULT_FEATURES = {
+  t_cc: 2850,
+  t_cv: 6200,
+  dq_dv_peak: 4.60,
+  v_at_peak: 3.985,
+  delta_T_max: 14.2,
+  delta_V_ohmic: 0.220,
+  Re: 0.052,
+  Rct: 0.075,
+  rest_time_hours: 3.5,
+};
+
 document.addEventListener("DOMContentLoaded", async () => {
   setupTabs();
   setupSliders();
   setupCycleScrubber();
+  setupModals();
   initCharts();
   await fetchDatasetSummary();
-  // Initial inference
+  await fetchFiguresCatalog();
+  // Trigger initial inference
   triggerPredict();
-  // Initial cycle waveforms
+  // Load initial cycle waveforms
   loadCycleData("B0005", 10);
 });
 
@@ -56,6 +73,16 @@ function setupTabs() {
       const targetId = btn.getAttribute("data-tab");
       document.getElementById(targetId).classList.add("active");
     });
+  });
+
+  document.getElementById("btnQuickLightroom")?.addEventListener("click", () => {
+    document.querySelector('[data-tab="tab-benchmark"]').click();
+    document.getElementById("figuresGalleryContainer")?.scrollIntoView({ behavior: "smooth" });
+  });
+
+  document.getElementById("btnResetParams")?.addEventListener("click", () => {
+    applyFeatures(DEFAULT_FEATURES);
+    document.getElementById("activePresetLabel").textContent = "Default Parameters";
   });
 }
 
@@ -138,6 +165,44 @@ async function fetchDatasetSummary() {
   }
 }
 
+async function fetchFiguresCatalog() {
+  try {
+    const res = await fetch("/api/figures");
+    if (!res.ok) return;
+    figuresCatalog = await res.json();
+    renderFiguresGallery(figuresCatalog);
+  } catch (err) {
+    console.error("Failed to fetch figures catalog:", err);
+  }
+}
+
+function renderFiguresGallery(catalog) {
+  const container = document.getElementById("figuresGalleryContainer");
+  if (!container) return;
+  container.innerHTML = "";
+
+  catalog.forEach((fig) => {
+    const card = document.createElement("div");
+    card.className = "figure-card";
+    card.innerHTML = `
+      <div class="figure-thumb-wrapper" onclick="openLightbox('${fig.id}')">
+        <img src="${fig.url}" alt="${fig.title}" class="figure-thumb">
+        <div class="figure-overlay-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="figure-body">
+        <div class="figure-tag">${fig.stage}</div>
+        <div class="figure-name">${fig.title}</div>
+        <div class="figure-desc">${fig.description}</div>
+        <div class="figure-actions">
+          <button class="btn-action" onclick="openLightbox('${fig.id}')" style="flex: 1;">🔍 Inspect</button>
+          <a href="${fig.url}" download="${fig.filename}" class="btn-primary" style="text-decoration: none; padding: 0.35rem 0.75rem;">⬇️ 300 DPI</a>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
 async function triggerPredict() {
   const payload = getCurrentFeatures();
   try {
@@ -148,6 +213,7 @@ async function triggerPredict() {
     });
     if (!res.ok) return;
     const data = await res.json();
+    latestPredictionData = { payload, ...data };
     updateModelResults(data);
   } catch (err) {
     console.error("Prediction error:", err);
@@ -167,18 +233,37 @@ function updateModelResults(data) {
     }
   });
 
-  // GPR Uncertainty display
+  // GPR Uncertainty & EoL Tail Probability
   if (unc.ci_lower !== undefined && unc.ci_upper !== undefined) {
+    const mean = unc.mean;
+    const std = unc.std;
     const halfWidth = (unc.ci_upper - unc.ci_lower) / 2.0;
     document.getElementById("unc-GPR").textContent = `95% Epistemic CI: [${unc.ci_lower.toFixed(2)}%, ${unc.ci_upper.toFixed(2)}%] (±${halfWidth.toFixed(2)}%)`;
+
+    // Normal CDF: P(SoH <= 70)
+    const zEol = (70.0 - mean) / (std > 0 ? std : 0.001);
+    const pEol = normalCDF(zEol) * 100.0;
+    const pText = pEol < 0.01 ? "< 0.01%" : pEol > 99.9 ? "> 99.9%" : `${pEol.toFixed(2)}%`;
+    document.getElementById("eolProbText").textContent = `P(SoH ≤ 70.0% EoL): ${pText}`;
+
+    // Update continuous uncertainty bell curve
+    updateUncertaintyCurve(mean, std);
   }
 
-  // Update Health Banner based on GPR prediction
+  // Update Health Banner
   const primarySoH = preds["GPR"] !== undefined ? preds["GPR"] : preds["Ridge"];
   updateHealthBanner(primarySoH);
 
   // Update Jacobian chart
   updateJacobianChart(jac);
+}
+
+// Error function approximation for Gaussian CDF
+function normalCDF(x) {
+  const t = 1.0 / (1.0 + 0.2316419 * Math.abs(x));
+  const d = 0.3989423 * Math.exp((-x * x) / 2.0);
+  const prob = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return x > 0 ? 1.0 - prob : prob;
 }
 
 function updateHealthBanner(soh) {
@@ -205,9 +290,76 @@ function updateHealthBanner(soh) {
   }
 }
 
+// Continuous Gaussian Bell Curve Calculation
+function updateUncertaintyCurve(mean, std) {
+  if (!uncertaintyChart) return;
+  const nPoints = 60;
+  const spread = Math.max(3.0 * std, 4.0);
+  const minX = mean - spread;
+  const maxX = mean + spread;
+  const step = (maxX - minX) / nPoints;
+
+  const labels = [];
+  const data = [];
+  for (let x = minX; x <= maxX; x += step) {
+    labels.push(x.toFixed(1));
+    const exponent = -0.5 * Math.pow((x - mean) / std, 2);
+    const pdf = (1.0 / (std * Math.sqrt(2.0 * Math.PI))) * Math.exp(exponent);
+    data.push(pdf);
+  }
+
+  uncertaintyChart.data.labels = labels;
+  uncertaintyChart.data.datasets[0].data = data;
+  uncertaintyChart.update("none");
+}
+
 // Chart Initializations
 function initCharts() {
-  // 1. Jacobian Horizontal Bar Chart
+  // 1. Live Epistemic Uncertainty Distribution Chart
+  const ctxUnc = document.getElementById("uncertaintyCurveChart").getContext("2d");
+  uncertaintyChart = new Chart(ctxUnc, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: "Epistemic Density N(μ, σ²)",
+          data: [],
+          borderColor: "#38bdf8",
+          backgroundColor: "rgba(56, 189, 248, 0.18)",
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => `SoH: ${items[0].label}%`,
+            label: (item) => `Density: ${item.raw.toFixed(4)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: "rgba(255, 255, 255, 0.05)" },
+          ticks: { color: "#94a3b8", font: { size: 9 }, maxTicksLimit: 7 },
+          title: { display: true, text: "SoH (%)", color: "#94a3b8", font: { size: 9 } },
+        },
+        y: {
+          display: false,
+        },
+      },
+    },
+  });
+
+  // 2. Jacobian Horizontal Bar Chart
   const ctxJac = document.getElementById("jacobianChart").getContext("2d");
   jacobianChart = new Chart(ctxJac, {
     type: "bar",
@@ -252,7 +404,7 @@ function initCharts() {
     },
   });
 
-  // 2. CC-CV Waveform Chart
+  // 3. CC-CV Waveform Chart
   const ctxCharge = document.getElementById("chargeWaveformChart").getContext("2d");
   chargeChart = new Chart(ctxCharge, {
     type: "line",
@@ -314,7 +466,7 @@ function initCharts() {
     },
   });
 
-  // 3. dQ/dV Incremental Capacity Chart
+  // 4. dQ/dV Incremental Capacity Chart
   const ctxIC = document.getElementById("icCurveChart").getContext("2d");
   icChart = new Chart(ctxIC, {
     type: "line",
@@ -358,7 +510,7 @@ function initCharts() {
 function updateJacobianChart(jac) {
   if (!jacobianChart) return;
   const values = FEATURE_NAMES.map((k) => jac[k] || 0);
-  const colors = values.map((v) => (v >= 0 ? "rgba(16, 185, 129, 0.85)" : "rgba(239, 68, 68, 0.85)"));
+  const colors = values.map((v) => (v >= 0 ? "rgba(16, 185, 129, 0.85)" : "rgba(244, 63, 94, 0.85)"));
 
   jacobianChart.data.datasets[0].data = values;
   jacobianChart.data.datasets[0].backgroundColor = colors;
@@ -424,4 +576,126 @@ async function loadCycleData(batteryId, cycleIdx) {
   } catch (err) {
     console.error("Failed to load cycle data:", err);
   }
+}
+
+// Modals: Lightroom & Exam Report
+function setupModals() {
+  // Lightroom modal
+  const lightboxModal = document.getElementById("lightboxModal");
+  document.getElementById("btnCloseLightbox")?.addEventListener("click", () => {
+    lightboxModal.classList.remove("open");
+  });
+  lightboxModal?.addEventListener("click", (e) => {
+    if (e.target === lightboxModal) lightboxModal.classList.remove("open");
+  });
+
+  // Report modal
+  const reportModal = document.getElementById("reportModal");
+  document.getElementById("btnOpenReport")?.addEventListener("click", () => {
+    buildExamReportContent();
+    reportModal.classList.add("open");
+  });
+  document.getElementById("btnCloseReport")?.addEventListener("click", () => {
+    reportModal.classList.remove("open");
+  });
+  reportModal?.addEventListener("click", (e) => {
+    if (e.target === reportModal) reportModal.classList.remove("open");
+  });
+  document.getElementById("btnPrintReport")?.addEventListener("click", () => {
+    window.print();
+  });
+}
+
+function openLightbox(figId) {
+  const fig = figuresCatalog.find((f) => f.id === figId);
+  if (!fig) return;
+  document.getElementById("modalFigStage").textContent = fig.stage;
+  document.getElementById("modalFigTitle").textContent = fig.title;
+  document.getElementById("modalFigImg").src = fig.url;
+  document.getElementById("modalFigDesc").textContent = fig.description;
+  const btnDl = document.getElementById("btnDownloadFig");
+  btnDl.href = fig.url;
+  btnDl.download = fig.filename;
+  document.getElementById("lightboxModal").classList.add("open");
+}
+window.openLightbox = openLightbox;
+
+function buildExamReportContent() {
+  const container = document.getElementById("reportContentArea");
+  if (!container) return;
+
+  const currentFeatures = getCurrentFeatures();
+  const preds = latestPredictionData?.predictions || {};
+  const unc = latestPredictionData?.gpr_uncertainty || {};
+  const jac = latestPredictionData?.jacobian || {};
+  const now = new Date().toLocaleString();
+
+  container.innerHTML = `
+    <div class="report-header-print">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <h1 style="font-size: 1.4rem; font-weight: 800; color: #38bdf8;">PHYSICS-INFORMED STATE OF HEALTH (SOH) ESTIMATION</h1>
+          <div style="font-size: 0.85rem; color: #94a3b8;">NASA PCoE Battery Dataset (18650 Li-ion Cells B0005, B0006, B0007, B0018)</div>
+        </div>
+        <div style="text-align: right; font-size: 0.8rem; color: #94a3b8;">
+          <div><strong>Generated:</strong> ${now}</div>
+          <div><strong>Evaluation:</strong> LOBO Cross-Validation</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-section-title">1. Operational Parameters & Physical Feature Vector (x_i)</div>
+    <table class="data-table" style="margin-bottom: 1rem;">
+      <thead>
+        <tr>
+          <th>Physical Feature</th>
+          <th>Symbol</th>
+          <th>Observed Value</th>
+          <th>Electrochemical Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>CC Charging Duration</td><td>t_cc</td><td><strong>${Math.round(currentFeatures.t_cc)} s</strong></td><td>Premature 4.2V cutoff from rising R_int</td></tr>
+        <tr><td>CV Charging Duration</td><td>t_cv</td><td><strong>${Math.round(currentFeatures.t_cv)} s</strong></td><td>Extended current decay retention phase</td></tr>
+        <tr><td>Incremental Capacity Peak</td><td>(dQ/dV)_peak</td><td><strong>${currentFeatures.dq_dv_peak.toFixed(2)} Ah/V</strong></td><td>Graphite/NMC phase transition plateau (LAM/LLI)</td></tr>
+        <tr><td>Voltage at Peak</td><td>V_peak</td><td><strong>${currentFeatures.v_at_peak.toFixed(3)} V</strong></td><td>Ohmic overpotential shift η = I · R_int</td></tr>
+        <tr><td>Max Temperature Rise</td><td>ΔT_max</td><td><strong>${currentFeatures.delta_T_max.toFixed(1)} °C</strong></td><td>Joule heat dissipation: Q_heat = ∫ I² R dt</td></tr>
+        <tr><td>Initial Ohmic Drop</td><td>ΔV_ohmic</td><td><strong>${currentFeatures.delta_V_ohmic.toFixed(3)} V</strong></td><td>Instantaneous bulk ohmic jump (R0 ≈ ΔV0 / I)</td></tr>
+        <tr><td>Electrolyte Resistance</td><td>R_e</td><td><strong>${currentFeatures.Re.toFixed(3)} Ω</strong></td><td>Bulk ionic transport resistance (EIS sweep)</td></tr>
+        <tr><td>Charge-Transfer Resistance</td><td>R_ct</td><td><strong>${currentFeatures.Rct.toFixed(3)} Ω</strong></td><td>Interfacial electrochemical kinetics & SEI film</td></tr>
+        <tr><td>Inter-Cycle Rest Duration</td><td>t_rest</td><td><strong>${currentFeatures.rest_time_hours.toFixed(1)} h</strong></td><td>Diffusion relaxation & capacity regeneration</td></tr>
+      </tbody>
+    </table>
+
+    <div class="report-section-title">2. Multi-Model Prognostic Predictions & Epistemic Uncertainty</div>
+    <table class="data-table" style="margin-bottom: 1rem;">
+      <thead>
+        <tr>
+          <th>Model Architecture</th>
+          <th>Predicted SoH (%)</th>
+          <th>Uncertainty Bounds</th>
+          <th>Mathematical Formulation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background: rgba(56, 189, 248, 0.08);">
+          <td><strong>Gaussian Process (GPR)</strong></td>
+          <td><strong style="color: #38bdf8; font-size: 1.05rem;">${(preds.GPR || 0).toFixed(2)}%</strong></td>
+          <td><strong>95% CI: [${(unc.ci_lower || 0).toFixed(2)}%, ${(unc.ci_upper || 0).toFixed(2)}%]</strong></td>
+          <td>Matérn 5/2 + WhiteKernel Epistemic Covariance</td>
+        </tr>
+        <tr><td>Ridge Regression</td><td>${(preds.Ridge || 0).toFixed(2)}%</td><td>Exact Closed-Form</td><td>Standardized L2 Regularization (α cross-validated)</td></tr>
+        <tr><td>ElasticNet Baseline</td><td>${(preds.ElasticNet || 0).toFixed(2)}%</td><td>Sparse Penalty</td><td>Mixed L1 / L2 Coordinate Descent</td></tr>
+        <tr><td>XGBoost Ensemble</td><td>${(preds.XGBoost || 0).toFixed(2)}%</td><td>TreeSHAP Bounds</td><td>Gradient Boosted Decision Trees (Depth=3)</td></tr>
+        <tr><td>Support Vector Regressor (SVR)</td><td>${(preds.SVR || 0).toFixed(2)}%</td><td>Kernel Distance</td><td>Dual Space RBF Kernel mapping</td></tr>
+      </tbody>
+    </table>
+
+    <div class="report-section-title">3. Analytical Sensitivities (Jacobian ∂SoH / ∂x_i) & Physical Justifications</div>
+    <div style="font-size: 0.82rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 1rem;">
+      <p><strong>• Thevenin Terminal Voltage Dynamics:</strong> V_term(t) = V_OCV(SoC) + I·R_int + V_RC(t). As R_int = R_e + R_ct increases with cell aging, the 4.2V CC ceiling is hit at lower SoC*, shrinking t_cc (Jacobian: +${(jac.t_cc || 0).toFixed(4)} %/s) and expanding t_cv.</p>
+      <p><strong>• Joule Heating Law:</strong> Q_heat = ∫ I² (R_e + R_ct) dt. Irreversible heat generation scales with impedance, enforcing negative sensitivity on peak thermal rise ΔT_max (Jacobian: ${(jac.delta_T_max || 0).toFixed(4)} %/°C).</p>
+      <p><strong>• Active Material Retention:</strong> Peak height collapse of (dQ/dV)_peak directly validates Loss of Active Material (LAM) and Loss of Lithium Inventory (LLI) with positive sensitivity +${(jac.dq_dv_peak || 0).toFixed(4)} % per Ah/V.</p>
+    </div>
+  `;
 }

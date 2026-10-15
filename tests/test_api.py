@@ -107,3 +107,17 @@ def test_static_ui_serving(client):
     r_js = client.get("/static/app.js")
     assert r_js.status_code == 200
 
+
+def test_figures_catalog_endpoint(client):
+    response = client.get("/api/figures")
+    assert response.status_code == 200
+    catalog = response.json()
+    assert len(catalog) == 6
+    assert catalog[0]["id"] == "degradation_regeneration"
+    assert "url" in catalog[0]
+    
+    # Test that figure image file itself can be served
+    fig_res = client.get(catalog[0]["url"])
+    assert fig_res.status_code == 200
+
+
