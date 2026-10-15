@@ -154,4 +154,28 @@ def test_dataset_tab_presence_in_html(client):
     assert 'id="tab-dataset"' in res.text
 
 
+def test_models_specs_endpoint(client):
+    res = client.get("/api/models/specs")
+    assert res.status_code == 200
+    data = res.json()
+    assert "models" in data
+    assert "pipeline_stages" in data
+    assert "Ridge" in data["models"]
+    assert "GPR" in data["models"]
+    assert "XGBoost" in data["models"]
+    assert "hyperparameters" in data["models"]["GPR"]
+    assert "kernel" in data["models"]["GPR"]["hyperparameters"]
+    assert "physics_equations" in data
+
+
+def test_methodology_tab_presence_in_html(client):
+    res = client.get("/")
+    assert res.status_code == 200
+    assert 'data-tab="tab-methodology"' in res.text
+    assert 'id="tab-methodology"' in res.text
+    assert "Thevenin Terminal Voltage" in res.text
+    assert "Hyperparameter" in res.text
+
+
+
 

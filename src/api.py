@@ -323,6 +323,124 @@ def get_dataset_records(
     }
 
 
+@app.get("/api/models/specs")
+def get_model_specifications() -> Dict[str, Any]:
+    """Return mathematical formulations, hyperparameter configurations, and physical foundations."""
+    return {
+        "pipeline_stages": [
+            {
+                "stage": 1,
+                "title": "Data Parsing & Operation Alignment",
+                "description": "Aligns sequential NASA .mat operations (preceding CC-CV charge, nearest EIS sweep, and discharge capacity). Drops Cycle 1 anomaly and extracts rest duration to capture lithium diffusion recovery."
+            },
+            {
+                "stage": 2,
+                "title": "Physics-Informed Feature Extraction",
+                "description": "Extracts 9 physically grounded parameters: t_cc, t_cv, (dQ/dV)_peak, V_peak, delta_T_max, delta_V_ohmic, Re, Rct, and rest_time_hours, with Savitzky-Golay numerical smoothing."
+            },
+            {
+                "stage": 3,
+                "title": "Leave-One-Battery-Out (LOBO) Cross-Validation",
+                "description": "Prevents time-series autocorrelation leakage by training on 3 cells (e.g. B0005, B0006, B0007) and evaluating on an entirely unseen cell (B0018)."
+            },
+            {
+                "stage": 4,
+                "title": "Mathematical & Electrochemical Justifications",
+                "description": "Audits model weights and Jacobian sensitivities against the Thevenin terminal voltage equation, Joule heating dissipation, and active material phase transitions (LAM/LLI)."
+            }
+        ],
+        "models": {
+            "Ridge": {
+                "name": "Ridge Regression (Standardized L2)",
+                "family": "Linear Baseline",
+                "objective": r"\min_{\mathbf{w}} \|\mathbf{y} - \mathbf{X}\mathbf{w}\|_2^2 + \alpha \|\mathbf{w}\|_2^2",
+                "solution": r"\mathbf{w}^* = (\mathbf{X}^T\mathbf{X} + \alpha \mathbf{I})^{-1}\mathbf{X}^T\mathbf{y}",
+                "hyperparameters": {
+                    "alpha": 1.0,
+                    "fit_intercept": True,
+                    "scaler": "StandardScaler(with_mean=True, with_std=True)"
+                },
+                "role": "Standardized linear baseline providing closed-form Jacobian sensitivities."
+            },
+            "ElasticNet": {
+                "name": "ElasticNet Regression (L1 + L2)",
+                "family": "Linear Regularized",
+                "objective": r"\min_{\mathbf{w}} \frac{1}{2n}\|\mathbf{y} - \mathbf{X}\mathbf{w}\|_2^2 + \alpha \rho \|\mathbf{w}\|_1 + \frac{\alpha(1-\rho)}{2}\|\mathbf{w}\|_2^2",
+                "solution": "Coordinate descent with soft-thresholding operator",
+                "hyperparameters": {
+                    "alpha": 0.1,
+                    "l1_ratio": 0.5,
+                    "max_iter": 2000,
+                    "tol": 0.0001
+                },
+                "role": "Balances sparse feature selection (L1) with collinear grouping stability (L2)."
+            },
+            "SVR": {
+                "name": "Support Vector Regression (RBF Kernel)",
+                "family": "Kernel Dual Space",
+                "objective": r"\min_{\mathbf{w}, b, \boldsymbol{\xi}, \boldsymbol{\xi}^*} \frac{1}{2}\|\mathbf{w}\|_2^2 + C \sum_{i=1}^n (\xi_i + \xi_i^*)",
+                "kernel": r"K(\mathbf{x}, \mathbf{x}') = \exp(-\gamma \|\mathbf{x} - \mathbf{x}'\|^2)",
+                "hyperparameters": {
+                    "kernel": "rbf",
+                    "C": 10.0,
+                    "epsilon": 0.1,
+                    "gamma": "scale"
+                },
+                "role": "Nonlinear kernel regressor constructing an epsilon-insensitive band for outlier resistance."
+            },
+            "GPR": {
+                "name": "Gaussian Process Regression (GPR)",
+                "family": "Non-Parametric Bayesian",
+                "prior": r"f(\mathbf{x}) \sim \mathcal{GP}(0, k(\mathbf{x}, \mathbf{x}'))",
+                "kernel": r"k_{\text{Matérn5/2}}(r) + \sigma_n^2 \delta_{ij}",
+                "posterior_mean": r"\mu_* = \mathbf{k}_*^T (\mathbf{K} + \sigma_n^2 \mathbf{I})^{-1}\mathbf{y}",
+                "posterior_variance": r"\sigma_*^2 = k(\mathbf{x}_*, \mathbf{x}_*) - \mathbf{k}_*^T (\mathbf{K} + \sigma_n^2 \mathbf{I})^{-1}\mathbf{k}_*",
+                "hyperparameters": {
+                    "kernel": "Matern(nu=2.5, length_scale=1.0) + WhiteKernel(noise_level=0.01)",
+                    "n_restarts_optimizer": 10,
+                    "alpha": 1e-10,
+                    "confidence_level": "95% (±1.96σ epistemic uncertainty)"
+                },
+                "role": "Quantifies analytical epistemic uncertainty and estimates tail failure probabilities P(SoH <= 70%)."
+            },
+            "XGBoost": {
+                "name": "Extreme Gradient Boosting (XGBoost)",
+                "family": "Tree Ensemble",
+                "objective": r"\mathcal{L}^{(t)} = \sum_{i=1}^n [g_i f_t(\mathbf{x}_i) + \frac{1}{2}h_i f_t^2(\mathbf{x}_i)] + \gamma T + \frac{1}{2}\lambda \sum_{j=1}^T w_j^2",
+                "hyperparameters": {
+                    "n_estimators": 100,
+                    "max_depth": 3,
+                    "learning_rate": 0.05,
+                    "subsample": 0.8,
+                    "colsample_bytree": 0.8,
+                    "reg_alpha": 0.1,
+                    "reg_lambda": 1.0,
+                    "random_state": 42
+                },
+                "role": "Nonlinear decision tree ensemble capturing high-order physical feature interactions, audited via TreeSHAP."
+            }
+        },
+        "physics_equations": {
+            "thevenin": {
+                "formula": r"V_{\text{term}}(t) = V_{\text{OCV}}(\text{SoC}) \pm I(t) \cdot (R_e + R_{ct}) + V_{\text{RC}}(t)",
+                "implication": "As internal resistance rises with degradation, the 4.2V cutoff is reached earlier, compressing constant-current duration t_cc and expanding constant-voltage duration t_cv."
+            },
+            "joule_heating": {
+                "formula": r"Q_{\text{heat}} = \int I^2 (R_e + R_{ct})\,dt",
+                "implication": "Thermal energy dissipation scales directly with internal impedance, explaining why peak temperature rise delta_T_max exhibits a strictly negative sensitivity on remaining capacity."
+            },
+            "phase_transitions": {
+                "formula": r"\Delta V_{\text{peak}} \propto I \cdot R_{\text{internal}}, \quad \text{Peak Area} \propto \text{Active Lithium Inventory}",
+                "implication": "Incremental capacity (dQ/dV) peak shrinkage and rightward voltage shift quantitatively diagnose Loss of Active Material (LAM) and Loss of Lithium Inventory (LLI)."
+            },
+            "jacobian": {
+                "formula": r"\mathcal{J}_i = \frac{\partial \widehat{\text{SoH}}}{\partial x_i} = \frac{w_i}{\sigma_{x, i}} \cdot \sigma_y",
+                "implication": "Verifies that model sensitivity derivatives match thermodynamic sign expectations across all degradation channels."
+            }
+        }
+    }
+
+
 @app.post("/api/predict")
 def predict_soh(payload: BatteryFeaturesPayload) -> Dict[str, Any]:
     """Execute real-time multi-model prediction and uncertainty estimation."""

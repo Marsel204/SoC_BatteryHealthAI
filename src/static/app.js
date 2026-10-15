@@ -11,6 +11,14 @@ let debounceTimer = null;
 let currentLoadedCycleFeatures = null;
 let latestPredictionData = null;
 
+// Methodology Visual State
+let ecmChart = null;
+let icAnatomyChart = null;
+let gprPlaygroundChart = null;
+let modelSpecsData = null;
+let currentEcmAging = 0;
+let currentIcMode = "all";
+
 // Dataset Explorer State
 let datasetPage = 1;
 let datasetPageSize = 50;
@@ -62,15 +70,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupSliders();
   setupCycleScrubber();
   setupDatasetTab();
+  setupMethodologyTab();
   setupModals();
   initCharts();
+  initMethodologyCharts();
   await fetchDatasetSummary();
   await fetchFiguresCatalog();
   await fetchDatasetRecords();
+  await fetchModelSpecs();
   // Trigger initial prediction
   triggerPredict();
   // Load initial cycle telemetry
   loadCycleData("B0005", 10);
+  setTimeout(renderMathEquations, 600);
 });
 
 // Segmented Navigation Switcher
@@ -84,6 +96,12 @@ function setupTabs() {
       btn.classList.add("active");
       const targetId = btn.getAttribute("data-tab");
       document.getElementById(targetId)?.classList.add("active");
+      if (targetId === "tab-methodology") {
+        renderMathEquations();
+        if (ecmChart) ecmChart.resize();
+        if (icAnatomyChart) icAnatomyChart.resize();
+        if (gprPlaygroundChart) gprPlaygroundChart.resize();
+      }
     });
   });
 
@@ -976,3 +994,571 @@ async function exportDatasetCsv() {
     console.error("Failed to export CSV:", err);
   }
 }
+
+function renderMathEquations() {
+  if (window.renderMathInElement) {
+    const el = document.getElementById("tab-methodology");
+    if (el) {
+      window.renderMathInElement(el, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true },
+        ],
+        throwOnError: false,
+      });
+    }
+  }
+}
+
+// ============================================================
+// METHODOLOGY INTERACTIVE VISUAL CONTROLLERS
+// ============================================================
+
+async function fetchModelSpecs() {
+  try {
+    const res = await fetch("/api/models/specs");
+    if (!res.ok) return;
+    modelSpecsData = await res.json();
+    renderModelInspector("Ridge");
+  } catch (err) {
+    console.error("Failed to fetch model specs:", err);
+  }
+}
+
+function setupMethodologyTab() {
+  // 1. Pipeline SVG flowchart node interaction
+  const svgNodes = document.querySelectorAll(".pipeline-svg-node");
+  svgNodes.forEach((node) => {
+    node.addEventListener("click", () => {
+      svgNodes.forEach((n) => n.classList.remove("active"));
+      node.classList.add("active");
+      const stage = node.getAttribute("data-stage");
+      const card = document.getElementById(`flowCard-${stage}`);
+      if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        card.style.borderColor = "var(--accent-primary)";
+        setTimeout(() => {
+          card.style.borderColor = "var(--border-subtle)";
+        }, 1500);
+      }
+    });
+  });
+
+  // 2. Thevenin ECM Aging Slider
+  const ecmSlider = document.getElementById("ecmAgingSlider");
+  ecmSlider?.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    currentEcmAging = val;
+    updateEcmSimulation(val);
+  });
+
+  // 3. dQ/dV Mode Buttons
+  const icButtons = document.querySelectorAll(".ic-mode-btn");
+  icButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      icButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const mode = btn.getAttribute("data-mode") || "all";
+      currentIcMode = mode;
+      updateIcAnatomy(mode);
+    });
+  });
+
+  // 4. GPR Playground Sliders
+  const gprLength = document.getElementById("gprLengthSlider");
+  const gprNoise = document.getElementById("gprNoiseSlider");
+  gprLength?.addEventListener("input", () => {
+    const l = parseFloat(gprLength.value);
+    document.getElementById("gprLengthVal").textContent = l.toFixed(2);
+    updateGprPlayground(l, parseFloat(gprNoise.value));
+  });
+  gprNoise?.addEventListener("input", () => {
+    const n = parseFloat(gprNoise.value);
+    document.getElementById("gprNoiseVal").textContent = n.toFixed(3);
+    updateGprPlayground(parseFloat(gprLength.value), n);
+  });
+
+  // 5. Model Inspector Switcher Buttons
+  const modelBtns = document.querySelectorAll(".model-inspect-btn");
+  modelBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      modelBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const modelName = btn.getAttribute("data-model");
+      renderModelInspector(modelName);
+    });
+  });
+}
+
+function initMethodologyCharts() {
+  // Chart 1: Thevenin ECM Charging Waveform
+  const ctxEcm = document.getElementById("ecmChargingChart")?.getContext("2d");
+  if (ctxEcm && !ecmChart) {
+    ecmChart = new Chart(ctxEcm, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Terminal Voltage V_term(t)",
+            data: [],
+            borderColor: "#38bdf8",
+            backgroundColor: "rgba(56, 189, 248, 0.08)",
+            fill: true,
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.15,
+          },
+          {
+            label: "Open-Circuit Voltage V_OCV(t)",
+            data: [],
+            borderColor: "#64748b",
+            borderDash: [4, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+          },
+          {
+            label: "4.20V Cutoff Ceiling",
+            data: [],
+            borderColor: "#f43f5e",
+            borderDash: [6, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 150 },
+        scales: {
+          x: {
+            title: { display: true, text: "Charging Time (seconds)", color: "#64748b", font: { size: 9.5 } },
+            grid: { color: "rgba(255, 255, 255, 0.04)" },
+            ticks: { color: "#64748b", font: { family: "monospace", size: 9 }, maxTicksLimit: 6 },
+          },
+          y: {
+            min: 3.6,
+            max: 4.28,
+            title: { display: true, text: "Voltage (V)", color: "#64748b", font: { size: 9.5 } },
+            grid: { color: "rgba(255, 255, 255, 0.04)" },
+            ticks: { color: "#64748b", font: { family: "monospace", size: 9 } },
+          },
+        },
+        plugins: {
+          legend: {
+            labels: { color: "#94a3b8", font: { size: 9.5 }, boxWidth: 10 },
+          },
+        },
+      },
+    });
+    updateEcmSimulation(0);
+  }
+
+  // Chart 2: Incremental Capacity (dQ/dV) Anatomy
+  const ctxIc = document.getElementById("icAnatomyChart")?.getContext("2d");
+  if (ctxIc && !icAnatomyChart) {
+    icAnatomyChart = new Chart(ctxIc, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Fresh Cell (Cycle 10 · 95% SoH)",
+            data: [],
+            borderColor: "#38bdf8",
+            backgroundColor: "rgba(56, 189, 248, 0.12)",
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.3,
+            fill: false,
+          },
+          {
+            label: "Aged Cell (Cycle 140 · 68% SoH)",
+            data: [],
+            borderColor: "#f43f5e",
+            backgroundColor: "rgba(244, 63, 94, 0.12)",
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.3,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 250 },
+        scales: {
+          x: {
+            title: { display: true, text: "Voltage (V)", color: "#64748b", font: { size: 9.5 } },
+            grid: { color: "rgba(255, 255, 255, 0.04)" },
+            ticks: { color: "#64748b", font: { family: "monospace", size: 9 }, maxTicksLimit: 7 },
+          },
+          y: {
+            min: 0,
+            max: 5.8,
+            title: { display: true, text: "dQ/dV (Ah / V)", color: "#64748b", font: { size: 9.5 } },
+            grid: { color: "rgba(255, 255, 255, 0.04)" },
+            ticks: { color: "#64748b", font: { family: "monospace", size: 9 } },
+          },
+        },
+        plugins: {
+          legend: {
+            labels: { color: "#94a3b8", font: { size: 9.5 }, boxWidth: 10 },
+          },
+        },
+      },
+    });
+    updateIcAnatomy("all");
+  }
+
+  // Chart 3: Gaussian Process Epistemic Uncertainty Playground
+  const ctxGpr = document.getElementById("gprPlaygroundChart")?.getContext("2d");
+  if (ctxGpr && !gprPlaygroundChart) {
+    gprPlaygroundChart = new Chart(ctxGpr, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Epistemic Upper 95% CI (+1.96σ)",
+            data: [],
+            borderColor: "transparent",
+            pointRadius: 0,
+            fill: "+1",
+            backgroundColor: "rgba(56, 189, 248, 0.12)",
+          },
+          {
+            label: "Epistemic Lower 95% CI (-1.96σ)",
+            data: [],
+            borderColor: "transparent",
+            pointRadius: 0,
+            fill: false,
+          },
+          {
+            label: "GPR Posterior Mean μ(Cycle)",
+            data: [],
+            borderColor: "#38bdf8",
+            borderWidth: 2.2,
+            pointRadius: 0,
+            tension: 0.2,
+          },
+          {
+            label: "Observed Cycles",
+            data: [],
+            type: "scatter",
+            backgroundColor: "#ffffff",
+            borderColor: "#38bdf8",
+            borderWidth: 1.5,
+            pointRadius: 3,
+          },
+          {
+            label: "70% EoL Criterion",
+            data: [],
+            borderColor: "#f43f5e",
+            borderDash: [5, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 200 },
+        scales: {
+          x: {
+            type: "linear",
+            min: 0,
+            max: 168,
+            title: { display: true, text: "Aging Cycles", color: "#64748b", font: { size: 9.5 } },
+            grid: { color: "rgba(255, 255, 255, 0.04)" },
+            ticks: { color: "#64748b", font: { family: "monospace", size: 9 } },
+          },
+          y: {
+            min: 60,
+            max: 104,
+            title: { display: true, text: "State of Health SoH (%)", color: "#64748b", font: { size: 9.5 } },
+            grid: { color: "rgba(255, 255, 255, 0.04)" },
+            ticks: { color: "#64748b", font: { family: "monospace", size: 9 } },
+          },
+        },
+        plugins: {
+          legend: {
+            labels: { color: "#94a3b8", font: { size: 9.5 }, boxWidth: 10 },
+          },
+        },
+      },
+    });
+    updateGprPlayground(1.2, 0.015);
+  }
+}
+
+function updateEcmSimulation(pct) {
+  // pct: 0 (fresh) to 100 (aged)
+  const norm = pct / 100.0;
+  const re = 0.045 + 0.070 * norm;
+  const rct = 0.065 + 0.215 * norm;
+  const rTotal = re + rct;
+  const ohmicDrop = 1.5 * rTotal;
+
+  // t_cc decreases as impedance increases; t_cv increases
+  const tcc = Math.round(3024 - 1200 * norm);
+  const tcv = Math.round(6960 + 2400 * norm);
+
+  // Update text & badges
+  const stateTxt = document.getElementById("ecmAgingStateText");
+  const badge = document.getElementById("ecmCutoffBadge");
+  if (stateTxt) {
+    if (pct < 25) {
+      stateTxt.textContent = `Fresh Cell (Cycle 2 · 100% SoH)`;
+      if (badge) { badge.className = "status-badge nominal"; badge.textContent = "Normal Cutoff"; }
+    } else if (pct < 70) {
+      stateTxt.textContent = `Mid-Life Cell (Cycle 85 · 82% SoH)`;
+      if (badge) { badge.className = "status-badge caution"; badge.textContent = "Overpotential Shift"; }
+    } else {
+      stateTxt.textContent = `Aged Cell (Cycle 160 · 67% SoH)`;
+      if (badge) { badge.className = "status-badge critical"; badge.textContent = "Premature Cutoff (EoL)"; }
+    }
+  }
+
+  const reEl = document.getElementById("ecmReVal");
+  const rctEl = document.getElementById("ecmRctVal");
+  const ohmicEl = document.getElementById("ecmOhmicVal");
+  const tccEl = document.getElementById("ecmTccVal");
+  const tcvEl = document.getElementById("ecmTcvVal");
+  if (reEl) reEl.textContent = `${re.toFixed(3)} Ω`;
+  if (rctEl) rctEl.textContent = `${rct.toFixed(3)} Ω`;
+  if (ohmicEl) ohmicEl.textContent = `${ohmicDrop.toFixed(3)} V`;
+  if (tccEl) tccEl.textContent = `${tcc} s`;
+  if (tcvEl) tcvEl.textContent = `${tcv} s`;
+
+  const svgRe = document.getElementById("svgReText");
+  const svgRct = document.getElementById("svgRctText");
+  if (svgRe) svgRe.textContent = `${re.toFixed(3)} Ω`;
+  if (svgRct) svgRct.textContent = `${rct.toFixed(3)} Ω`;
+
+  if (!ecmChart) return;
+
+  // Generate 60 points for CC-CV charging curve
+  const labels = [];
+  const vTerm = [];
+  const vOcv = [];
+  const vCeil = [];
+
+  const timeMax = 9000;
+  const steps = 60;
+  for (let i = 0; i <= steps; i++) {
+    const t = Math.round((i / steps) * timeMax);
+    labels.push(t);
+    vCeil.push(4.20);
+
+    // Baseline OCV rises from 3.65V to 4.18V
+    const frac = Math.min(1.0, t / 4200);
+    const ocv = 3.65 + 0.50 * Math.pow(frac, 0.65);
+    vOcv.push(parseFloat(ocv.toFixed(3)));
+
+    if (t <= tcc) {
+      // CC mode: terminal voltage = OCV + ohmicDrop + polarization
+      const polar = 0.05 * (1 - Math.exp(-t / 300));
+      const term = Math.min(4.20, ocv + ohmicDrop + polar);
+      vTerm.push(parseFloat(term.toFixed(3)));
+    } else {
+      // CV mode: clamped at 4.20V
+      vTerm.push(4.20);
+    }
+  }
+
+  ecmChart.data.labels = labels;
+  ecmChart.data.datasets[0].data = vTerm;
+  ecmChart.data.datasets[1].data = vOcv;
+  ecmChart.data.datasets[2].data = vCeil;
+  ecmChart.update();
+}
+
+function updateIcAnatomy(mode) {
+  const titleEl = document.getElementById("icModeTitle");
+  const descEl = document.getElementById("icModeDesc");
+
+  if (!icAnatomyChart) return;
+
+  const vVals = [];
+  const freshCurve = [];
+  const agedCurve = [];
+
+  // Voltage range 3.80V to 4.18V in steps of 0.005V
+  for (let v = 3.80; v <= 4.18; v += 0.005) {
+    const vRound = parseFloat(v.toFixed(3));
+    vVals.push(vRound);
+
+    // Fresh cell: Peak 1 at 3.900V (height 4.6), Peak 2 at 4.020V (height 5.1)
+    const p1Fresh = 4.6 * Math.exp(-Math.pow((vRound - 3.900) / 0.035, 2));
+    const p2Fresh = 5.1 * Math.exp(-Math.pow((vRound - 4.020) / 0.030, 2));
+    const bgFresh = 0.6 + 0.4 * (vRound - 3.80);
+    freshCurve.push(parseFloat((p1Fresh + p2Fresh + bgFresh).toFixed(3)));
+
+    // Aged cell: Peak 1 shifted to 3.935V (height 2.6), Peak 2 shifted to 4.050V (height 2.9)
+    const p1Aged = 2.6 * Math.exp(-Math.pow((vRound - 3.935) / 0.038, 2));
+    const p2Aged = 2.9 * Math.exp(-Math.pow((vRound - 4.050) / 0.032, 2));
+    const bgAged = 0.4 + 0.3 * (vRound - 3.80);
+    agedCurve.push(parseFloat((p1Aged + p2Aged + bgAged).toFixed(3)));
+  }
+
+  icAnatomyChart.data.labels = vVals;
+  icAnatomyChart.data.datasets[0].data = freshCurve;
+  icAnatomyChart.data.datasets[1].data = agedCurve;
+
+  if (mode === "lam") {
+    if (titleEl) titleEl.textContent = "Loss of Active Material (LAM): Peak Amplitude Collapse";
+    if (descEl) descEl.innerHTML = "Notice the sharp collapse of Peak 1 (from <strong>5.2 Ah/V down to 2.8 Ah/V</strong>). In lithium-ion cells, mechanical particle cracking and graphite exfoliation reduce the active surface area available for intercalation, directly lowering the derivative peak amplitude without necessarily shifting its intrinsic open-circuit potential.";
+    icAnatomyChart.data.datasets[0].fill = false;
+    icAnatomyChart.data.datasets[1].fill = false;
+    icAnatomyChart.data.datasets[1].borderColor = "#f43f5e";
+  } else if (mode === "lli") {
+    if (titleEl) titleEl.textContent = "Loss of Lithium Inventory (LLI): Total Integrated Area Shrinkage";
+    if (descEl) descEl.innerHTML = "Because \\(\\int_{V_1}^{V_2} (dQ/dV)\\,dV = \\Delta Q\\), the total area bounded under the curve corresponds to total transferable discharge capacity. Irreversible solid electrolyte interphase (SEI) thickening consumes cyclable lithium ions, shrinking the area between curves (a loss of <strong>0.54 Ah</strong> over 140 cycles).";
+    icAnatomyChart.data.datasets[0].fill = true;
+    icAnatomyChart.data.datasets[1].fill = true;
+  } else if (mode === "ohmic") {
+    if (titleEl) titleEl.textContent = "Ohmic Overpotential Drift: Rightward Peak Displacement (ΔV)";
+    if (descEl) descEl.innerHTML = "Observe that the aged peak positions are displaced to the right: Peak 1 shifts from <strong>3.900V → 3.935V (+35 mV)</strong>. Because \\(\\Delta V = I_{\\text{charge}} \\cdot R_{\\text{int}}\\), measuring peak drift directly quantifies internal resistance growth in situ without requiring an external electrochemical impedance spectroscopy (EIS) sweep.";
+    icAnatomyChart.data.datasets[0].fill = false;
+    icAnatomyChart.data.datasets[1].fill = false;
+    icAnatomyChart.data.datasets[1].borderColor = "#fbbf24";
+  } else {
+    if (titleEl) titleEl.textContent = "Graphite Staging & Redox Phase Transition Peaks";
+    if (descEl) descEl.innerHTML = "The Incremental Capacity curve converts plateau regions in the charging curve into distinct diagnostic peaks. Peak 1 at \\(\\approx 3.90\\text{ V}\\) reflects Stage 2 graphite intercalation (\\(\\text{LiC}_{12} \\to \\text{LiC}_6\\)), while Peak 2 at \\(\\approx 4.02\\text{ V}\\) reflects cathode transition-metal redox couples.";
+    icAnatomyChart.data.datasets[0].fill = false;
+    icAnatomyChart.data.datasets[1].fill = false;
+    icAnatomyChart.data.datasets[1].borderColor = "#f43f5e";
+  }
+
+  icAnatomyChart.update();
+  renderMathEquations();
+}
+
+function updateGprPlayground(lengthScale, noiseVar) {
+  if (!gprPlaygroundChart) return;
+
+  const cycles = [];
+  const meanVals = [];
+  const upperVals = [];
+  const lowerVals = [];
+  const eolLine = [];
+
+  // Generate cycles 1 to 168
+  for (let c = 1; c <= 168; c += 2) {
+    cycles.push(c);
+    eolLine.push(70.0);
+
+    // True degradation path
+    const trueSoh = 100 - 0.17 * c - 0.00045 * Math.pow(c, 2);
+    // Add diffusion recovery wave around cycle 20 and 80
+    const regen = (c > 20 && c < 35 ? 1.8 : 0) + (c > 80 && c < 95 ? 1.4 : 0);
+    const mean = trueSoh + regen;
+    meanVals.push(parseFloat(mean.toFixed(2)));
+
+    // Epistemic uncertainty: increases away from training clusters and inversely with length scale
+    const dist = Math.abs(c - 70) / 70.0;
+    const epistemicStd = Math.sqrt(noiseVar * 100 + (Math.pow(dist, 2) * 4.5) / lengthScale);
+    const halfWidth = 1.96 * epistemicStd;
+
+    upperVals.push(parseFloat((mean + halfWidth).toFixed(2)));
+    lowerVals.push(parseFloat((mean - halfWidth).toFixed(2)));
+  }
+
+  // Scattered observations
+  const obsPoints = [
+    { x: 2, y: 99.4 }, { x: 15, y: 97.2 }, { x: 30, y: 96.1 },
+    { x: 50, y: 91.5 }, { x: 70, y: 86.8 }, { x: 90, y: 82.3 },
+    { x: 110, y: 77.9 }, { x: 130, y: 72.8 }, { x: 150, y: 66.4 }
+  ];
+
+  gprPlaygroundChart.data.labels = cycles;
+  gprPlaygroundChart.data.datasets[0].data = upperVals;
+  gprPlaygroundChart.data.datasets[1].data = lowerVals;
+  gprPlaygroundChart.data.datasets[2].data = meanVals;
+  gprPlaygroundChart.data.datasets[3].data = obsPoints;
+  gprPlaygroundChart.data.datasets[4].data = eolLine;
+  gprPlaygroundChart.update();
+}
+
+function renderModelInspector(modelName) {
+  const container = document.getElementById("modelInspectorCard");
+  if (!container) return;
+
+  if (!modelSpecsData || !modelSpecsData.models || !modelSpecsData.models[modelName]) {
+    container.innerHTML = `<div style="color: var(--text-tertiary); font-size: 0.8rem;">Loading model specifications...</div>`;
+    return;
+  }
+
+  const m = modelSpecsData.models[modelName];
+
+  let hyperRows = "";
+  if (m.hyperparameters) {
+    hyperRows = Object.entries(m.hyperparameters)
+      .map(([k, v]) => `
+        <tr>
+          <td><code>${k}</code></td>
+          <td><strong>${v}</strong></td>
+        </tr>
+      `)
+      .join("");
+  }
+
+  container.innerHTML = `
+    <div class="model-inspector-grid">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.4rem;">
+          <h3 style="font-size: 0.96rem; font-weight: 600; color: var(--text-primary); margin: 0;">${m.name}</h3>
+          <span class="brand-pill">${m.family}</span>
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.55; margin-bottom: 0.75rem;">
+          ${m.role}
+        </p>
+
+        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+          Optimization Objective
+        </div>
+        <div class="katex-equation-block">
+          $$${m.objective || m.prior || ""}$$
+        </div>
+
+        ${m.solution ? `
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.05em; margin-top: 0.6rem; margin-bottom: 0.25rem;">
+            Analytical Solution / Solver
+          </div>
+          <div class="katex-equation-block">
+            $$${m.solution}$$
+          </div>
+        ` : ""}
+      </div>
+
+      <div>
+        <div style="font-size: 0.76rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem;">
+          Configured Hyperparameters
+        </div>
+        <table class="instrument-table" style="font-size: 0.76rem;">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Setting</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${hyperRows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  renderMathEquations();
+}
+
+

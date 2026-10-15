@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Battery State of Health Prognostics | NASA Ames PCoE</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
@@ -56,6 +59,13 @@
           <line x1="16" y1="17" x2="8" y2="17"></line>
         </svg>
         Validation & Proofs
+      </button>
+      <button class="segment-btn" data-tab="tab-methodology">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        Math & Methodology
       </button>
     </nav>
     
@@ -569,6 +579,439 @@
         <div class="figures-rack" id="figuresGalleryContainer">
           <!-- Populated dynamically via /api/figures -->
         </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 5: MATHEMATICAL & METHODOLOGICAL SPECIFICATION          -->
+    <!-- ============================================================ -->
+    <section id="tab-methodology" class="view-section">
+
+      <!-- Header Banner -->
+      <div class="panel method-hero-panel">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <span class="brand-pill" style="margin-bottom: 0.35rem; display: inline-block;">UNIVERSITY CAPSTONE SPECIFICATION</span>
+            <h1 style="font-size: 1.25rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.35rem;">
+              Physics-Informed Battery State of Health (SoH) Estimation
+            </h1>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); max-width: 820px; line-height: 1.55;">
+              A 4-stage prognostics methodology combining empirical time-series telemetry from NASA Ames Prognostics Center of Excellence (PCoE) 18650 Li-ion cells with equivalent circuit models (ECM), irreversible thermodynamics, and epistemic Bayesian uncertainty quantification.
+            </p>
+          </div>
+          <div style="text-align: right; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-tertiary);">
+            <div>Target Battery Cells: <strong>B0005, B0006, B0007, B0018</strong></div>
+            <div>Ambient Temperature: <strong>24°C Constant</strong></div>
+            <div>EoL Failure Criterion: <strong>70% SoH (1.40 Ah)</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1: Interactive 4-Stage Architecture Flowchart -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">1. Four-Stage Physics-Informed Pipeline</span>
+          <span class="panel-meta">End-to-End Workflow Architecture</span>
+        </div>
+
+        <!-- Visual Interactive SVG Flowchart -->
+        <div class="pipeline-diagram-wrapper">
+          <svg class="pipeline-svg-flow" viewBox="0 0 920 120" width="100%" height="120">
+            <defs>
+              <marker id="flowArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8"/>
+              </marker>
+              <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Connector Lines -->
+            <path d="M 190 60 L 255 60" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#flowArrow)" />
+            <path d="M 435 60 L 500 60" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#flowArrow)" />
+            <path d="M 680 60 L 745 60" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#flowArrow)" />
+
+            <!-- Node 1: Ingestion & Alignment -->
+            <g class="pipeline-svg-node active" data-stage="1" transform="translate(15, 20)">
+              <rect width="175" height="80" rx="8" fill="#151924" stroke="#38bdf8" stroke-width="1.5" />
+              <text x="87" y="28" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="0.08em">STAGE 1</text>
+              <text x="87" y="47" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">Data Parsing & Quirks</text>
+              <text x="87" y="65" text-anchor="middle" fill="#94a3b8" font-size="9.5">Op Alignment & Rest Time</text>
+            </g>
+
+            <!-- Node 2: Feature Extraction -->
+            <g class="pipeline-svg-node" data-stage="2" transform="translate(260, 20)">
+              <rect width="175" height="80" rx="8" fill="#151924" stroke="#1e2433" stroke-width="1.5" />
+              <text x="87" y="28" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="0.08em">STAGE 2</text>
+              <text x="87" y="47" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">Feature Extraction</text>
+              <text x="87" y="65" text-anchor="middle" fill="#94a3b8" font-size="9.5">9 Channels + Savitzky-Golay</text>
+            </g>
+
+            <!-- Node 3: LOBO Cross-Validation -->
+            <g class="pipeline-svg-node" data-stage="3" transform="translate(505, 20)">
+              <rect width="175" height="80" rx="8" fill="#151924" stroke="#1e2433" stroke-width="1.5" />
+              <text x="87" y="28" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="0.08em">STAGE 3</text>
+              <text x="87" y="47" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">LOBO Evaluation</text>
+              <text x="87" y="65" text-anchor="middle" fill="#94a3b8" font-size="9.5">Cross-Cell Generalization</text>
+            </g>
+
+            <!-- Node 4: Mathematical Proofs -->
+            <g class="pipeline-svg-node" data-stage="4" transform="translate(745, 20)">
+              <rect width="160" height="80" rx="8" fill="#151924" stroke="#1e2433" stroke-width="1.5" />
+              <text x="80" y="28" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="0.08em">STAGE 4</text>
+              <text x="80" y="47" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="600">Physical Justification</text>
+              <text x="80" y="65" text-anchor="middle" fill="#94a3b8" font-size="9.5">Thevenin, Joule, Phase Audit</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- 4 Detailed Cards -->
+        <div class="pipeline-flow-grid" style="margin-top: 1rem;">
+          <div class="pipeline-flow-card" id="flowCard-1">
+            <div class="pipeline-step-badge">Stage 1 · Data Parsing</div>
+            <div class="pipeline-title">Operation Alignment & Quirks Handling</div>
+            <p class="pipeline-desc">
+              NASA <code>.mat</code> files log <code>charge</code>, <code>discharge</code>, and <code>impedance</code> sequentially without pre-grouped cycle tags. Our parser temporally aligns preceding charge CC/CV curves and nearest EIS sweeps (\(R_e, R_{ct}\)) to each discharge capacity label.
+            </p>
+            <div style="margin-top: 0.6rem; font-size: 0.73rem; color: var(--accent-cyan); font-family: var(--font-mono);">
+              ✓ Drops Cycle 1 Anomaly<br>
+              ✓ Computes Lithium Diffusion <code>rest_time_hours</code>
+            </div>
+          </div>
+
+          <div class="pipeline-flow-card" id="flowCard-2">
+            <div class="pipeline-step-badge">Stage 2 · Physics Features</div>
+            <div class="pipeline-title">Feature Extraction & dQ/dV Denoising</div>
+            <p class="pipeline-desc">
+              Extracts 9 observable channels: \(t_{\text{cc}}\), \(t_{\text{cv}}\), \((dQ/dV)_{\text{peak}}\), \(V_{\text{peak}}\), \(\Delta T_{\text{max}}\), \(\Delta V_{\text{ohmic}}\), \(R_e\), \(R_{ct}\), and \(t_{\text{rest}}\). Employs <strong>Savitzky-Golay polynomial filtering</strong> (\(N=9\), order 2) on uniform 10 mV voltage grids to eliminate numerical differentiation noise spikes.
+            </p>
+            <div style="margin-top: 0.6rem; font-size: 0.73rem; color: var(--accent-cyan); font-family: var(--font-mono);">
+              ✓ Uniform Binning \(\Delta V = 10\text{ mV}\)<br>
+              ✓ Derivative Stability at Cutoff Thresholds
+            </div>
+          </div>
+
+          <div class="pipeline-flow-card" id="flowCard-3">
+            <div class="pipeline-step-badge">Stage 3 · Validation Protocol</div>
+            <div class="pipeline-title">Leave-One-Battery-Out (LOBO)</div>
+            <p class="pipeline-desc">
+              Standard random train/test splits cause severe optimistic bias due to temporal autocorrelation within the same battery. We enforce strict <strong>LOBO cross-validation</strong>: training on 3 cells (e.g. \(B0005, B0006, B0007\)) and evaluating on the fourth unseen cell (\(B0018\)).
+            </p>
+            <div style="margin-top: 0.6rem; font-size: 0.73rem; color: var(--accent-cyan); font-family: var(--font-mono);">
+              ✓ Zero Time-Series Leakage<br>
+              ✓ Validates Cell-to-Cell Transferability
+            </div>
+          </div>
+
+          <div class="pipeline-flow-card" id="flowCard-4">
+            <div class="pipeline-step-badge">Stage 4 · Physics Grounding</div>
+            <div class="pipeline-title">Electrochemical Proofs & Audits</div>
+            <p class="pipeline-desc">
+              Models are audited against first-principles battery physics. Empirical weights and Jacobian sensitivities \(\mathcal{J}_i = \partial \widehat{\text{SoH}}/\partial x_i\) must satisfy the thermodynamic and kinetic constraints of the <strong>Thevenin Terminal Voltage equation</strong> and <strong>Joule Heating dissipation</strong>.
+            </p>
+            <div style="margin-top: 0.6rem; font-size: 0.73rem; color: var(--accent-cyan); font-family: var(--font-mono);">
+              ✓ Thevenin Overpotential Proof<br>
+              ✓ Joule Heating Law Thermodynamic Sign
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Interactive Thevenin Equivalent Circuit Model (ECM) Instrument -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">2. Interactive Thevenin Equivalent Circuit Model (ECM) Instrument</span>
+          <span class="panel-meta">Electrochemical Overpotential & Cutoff Proof</span>
+        </div>
+
+        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; background: var(--bg-surface-raised); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-subtle);">
+          <div style="flex-grow: 1; min-width: 260px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 0.25rem;">
+              <span style="color: var(--text-tertiary); font-weight: 500;">Simulated Degradation Stage:</span>
+              <span id="ecmAgingStateText" style="font-family: var(--font-mono); font-weight: 600; color: var(--accent-cyan);">Fresh Cell (Cycle 2 · 100% SoH)</span>
+            </div>
+            <input type="range" class="range-slider" id="ecmAgingSlider" min="0" max="100" value="0" step="1">
+          </div>
+          <div style="display: flex; gap: 1.25rem; font-family: var(--font-mono); font-size: 0.76rem;">
+            <div>R<sub>e</sub>: <strong id="ecmReVal" style="color: var(--accent-cyan);">0.045 Ω</strong></div>
+            <div>R<sub>ct</sub>: <strong id="ecmRctVal" style="color: var(--accent-cyan);">0.065 Ω</strong></div>
+            <div>ΔV<sub>ohmic</sub>: <strong id="ecmOhmicVal" style="color: var(--status-nominal);">0.165 V</strong></div>
+            <div>t<sub>cc</sub>: <strong id="ecmTccVal" style="color: var(--accent-cyan);">3024 s</strong></div>
+            <div>t<sub>cv</sub>: <strong id="ecmTcvVal" style="color: var(--text-secondary);">6960 s</strong></div>
+          </div>
+        </div>
+
+        <div class="workspace-grid" style="grid-template-columns: 1.1fr 0.9fr; gap: 1.25rem;">
+          
+          <!-- Left: Vector Circuit Diagram -->
+          <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; display: flex; flex-direction: column; justify-content: center;">
+            <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+              <span>First-Order Thevenin Cell Network</span>
+              <span class="brand-pill">Vector Schematic</span>
+            </div>
+            
+            <svg viewBox="0 0 520 220" width="100%" height="210" style="background: #090b10; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.04);">
+              <!-- Current Arrow -->
+              <line x1="30" y1="45" x2="90" y2="45" stroke="#38bdf8" stroke-width="2" marker-end="url(#flowArrow)" />
+              <text x="60" y="36" fill="#38bdf8" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">I_charge = +1.5A</text>
+
+              <!-- Top Wire -->
+              <path d="M 40 85 L 110 85" stroke="#94a3b8" stroke-width="2" fill="none" />
+              <path d="M 170 85 L 230 85" stroke="#94a3b8" stroke-width="2" fill="none" />
+              
+              <!-- OCV Source -->
+              <circle cx="140" cy="85" r="28" fill="#151924" stroke="#38bdf8" stroke-width="2" />
+              <line x1="130" y1="75" x2="130" y2="95" stroke="#f8fafc" stroke-width="2.5" />
+              <line x1="148" y1="68" x2="148" y2="102" stroke="#f8fafc" stroke-width="3.5" />
+              <text x="140" y="50" fill="#f8fafc" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">V_OCV(SoC)</text>
+
+              <!-- Resistor R_e (Bulk) -->
+              <rect id="svgReBox" x="230" y="73" width="60" height="24" rx="3" fill="#1e2433" stroke="#38bdf8" stroke-width="1.5" />
+              <text x="260" y="89" fill="#f8fafc" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">R_e</text>
+              <text id="svgReText" x="260" y="112" fill="#38bdf8" font-family="monospace" font-size="9" text-anchor="middle">0.045 Ω</text>
+
+              <!-- Wire to Parallel RC -->
+              <path d="M 290 85 L 340 85" stroke="#94a3b8" stroke-width="2" fill="none" />
+              <path d="M 340 85 L 340 50 L 360 50" stroke="#94a3b8" stroke-width="2" fill="none" />
+              <path d="M 340 85 L 340 120 L 360 120" stroke="#94a3b8" stroke-width="2" fill="none" />
+
+              <!-- Parallel Top Branch: R_ct -->
+              <rect id="svgRctBox" x="360" y="38" width="60" height="24" rx="3" fill="#1e2433" stroke="#e0f2fe" stroke-width="1.5" />
+              <text x="390" y="54" fill="#f8fafc" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">R_ct</text>
+              <text id="svgRctText" x="390" y="30" fill="#38bdf8" font-family="monospace" font-size="9" text-anchor="middle">0.065 Ω</text>
+
+              <!-- Parallel Bottom Branch: C_dl -->
+              <line x1="380" y1="110" x2="380" y2="130" stroke="#f8fafc" stroke-width="3" />
+              <line x1="395" y1="110" x2="395" y2="130" stroke="#f8fafc" stroke-width="3" />
+              <text x="388" y="146" fill="#94a3b8" font-family="monospace" font-size="9.5" text-anchor="middle">C_dl (Double-Layer)</text>
+
+              <!-- Merge Parallel Branches -->
+              <path d="M 420 50 L 440 50 L 440 85" stroke="#94a3b8" stroke-width="2" fill="none" />
+              <path d="M 405 120 L 440 120 L 440 85" stroke="#94a3b8" stroke-width="2" fill="none" />
+              
+              <!-- Terminals -->
+              <path d="M 440 85 L 485 85" stroke="#94a3b8" stroke-width="2" fill="none" />
+              <circle cx="485" cy="85" r="4" fill="#38bdf8" />
+              <text x="500" y="89" fill="#38bdf8" font-family="monospace" font-size="13" font-weight="bold">+</text>
+
+              <!-- Bottom Return Wire -->
+              <path d="M 40 175 L 485 175" stroke="#94a3b8" stroke-width="2" fill="none" />
+              <circle cx="485" cy="175" r="4" fill="#f87171" />
+              <text x="500" y="179" fill="#f87171" font-family="monospace" font-size="13" font-weight="bold">-</text>
+
+              <!-- Voltmeter Bracket -->
+              <path d="M 475 92 L 465 92 L 465 168 L 475 168" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3" fill="none" />
+              <text x="445" y="134" fill="#38bdf8" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">V_term(t)</text>
+            </svg>
+
+            <div style="font-size: 0.76rem; color: var(--text-secondary); margin-top: 0.6rem; line-height: 1.5;">
+              $$\mathbf{V_{\text{term}}(t) = V_{\text{OCV}}(\text{SoC}) + I \cdot (R_e + R_{ct}) + V_{\text{RC}}(t)}$$
+            </div>
+          </div>
+
+          <!-- Right: Dynamic Voltage Trajectory Graph -->
+          <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; display: flex; flex-direction: column;">
+            <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem; display: flex; justify-content: space-between;">
+              <span>Simulated CC-CV Charging Profile</span>
+              <span id="ecmCutoffBadge" class="status-badge nominal" style="font-size: 0.68rem;">Normal Cutoff</span>
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-tertiary); margin-bottom: 0.5rem;">
+              Demonstrates why rising internal impedance cuts CC phase short (\(t_{\text{cc}}\downarrow\)) and stretches CV mode (\(t_{\text{cv}}\uparrow\)).
+            </div>
+            <div class="chart-box" style="height: 230px;">
+              <canvas id="ecmChargingChart"></canvas>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Section 3: Incremental Capacity (dQ/dV) Phase Transitions -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">3. Incremental Capacity (dQ/dV) Degradation Anatomy</span>
+          <span class="panel-meta">Electrochemical Phase Transitions & Mode Isolation</span>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.85rem; flex-wrap: wrap;">
+          <span style="font-size: 0.74rem; color: var(--text-tertiary); align-self: center; margin-right: 0.25rem;">Highlight Mode:</span>
+          <button class="preset-pill ic-mode-btn active" data-mode="all">All Mechanisms</button>
+          <button class="preset-pill ic-mode-btn" data-mode="lam">Loss of Active Material (LAM)</button>
+          <button class="preset-pill ic-mode-btn" data-mode="lli">Loss of Lithium Inventory (LLI)</button>
+          <button class="preset-pill ic-mode-btn" data-mode="ohmic">Ohmic Resistance Shift (ΔV)</button>
+        </div>
+
+        <div class="workspace-grid" style="grid-template-columns: 1.15fr 0.85fr; gap: 1.25rem;">
+          
+          <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem;">
+            <div class="chart-box" style="height: 270px;">
+              <canvas id="icAnatomyChart"></canvas>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div id="icModeTitle" style="font-size: 0.88rem; font-weight: 600; color: var(--accent-cyan); margin-bottom: 0.4rem;">
+                Graphite Staging & Redox Phase Peaks
+              </div>
+              <div id="icModeDesc" style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6;">
+                The Incremental Capacity curve converts plateau regions in the charging curve into distinct diagnostic peaks. Peak 1 at \(\approx 3.90\text{ V}\) reflects Stage 2 graphite intercalation (\(\text{LiC}_{12} \to \text{LiC}_6\)), while Peak 2 at \(\approx 4.02\text{ V}\) reflects cathode transition-metal redox couples.
+              </div>
+            </div>
+
+            <div style="margin-top: 1rem; padding: 0.75rem; background: #080a0f; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.05);">
+              <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-bottom: 0.25rem;">
+                Mathematical Formulation
+              </div>
+              <div style="font-size: 0.82rem; font-family: var(--font-mono); color: var(--text-primary);">
+                $$\frac{dQ}{dV} = \frac{I(t)}{dV/dt}, \quad \Delta V_{\text{peak}} \propto I \cdot (R_e + R_{ct})$$
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Section 4: Interactive GPR Epistemic Uncertainty Playground -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">4. Gaussian Process Epistemic Uncertainty Playground</span>
+          <span class="panel-meta">Non-Parametric Bayesian Covariance Visualizer</span>
+        </div>
+
+        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; background: var(--bg-surface-raised); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-subtle);">
+          <div style="min-width: 200px; flex-grow: 1;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-bottom: 0.2rem;">
+              <span style="color: var(--text-tertiary);">Matérn 5/2 Length-Scale (l)</span>
+              <span id="gprLengthVal" style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">1.20</span>
+            </div>
+            <input type="range" class="range-slider" id="gprLengthSlider" min="0.4" max="3.5" step="0.1" value="1.2">
+          </div>
+
+          <div style="min-width: 200px; flex-grow: 1;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.76rem; margin-bottom: 0.2rem;">
+              <span style="color: var(--text-tertiary);">WhiteNoise Variance (σ_n²)</span>
+              <span id="gprNoiseVal" style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">0.015</span>
+            </div>
+            <input type="range" class="range-slider" id="gprNoiseSlider" min="0.001" max="0.05" step="0.002" value="0.015">
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <span class="brand-pill" style="color: var(--accent-cyan); border-color: rgba(56, 189, 248, 0.3);">95% CI Shading (±1.96σ)</span>
+          </div>
+        </div>
+
+        <div class="workspace-grid" style="grid-template-columns: 1.2fr 0.8fr; gap: 1.25rem;">
+          
+          <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem;">
+            <div class="chart-box" style="height: 270px;">
+              <canvas id="gprPlaygroundChart"></canvas>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem;">
+                Why GPR Outperforms Deterministic Models
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 0.6rem;">
+                Deterministic regressors provide single-point estimates without awareness of unseen feature regimes. GPR computes the exact analytical epistemic posterior:
+              </p>
+              <div style="background: #080a0f; border: 1px solid rgba(255, 255, 255, 0.05); padding: 0.5rem; border-radius: 5px; font-size: 0.8rem; margin-bottom: 0.6rem;">
+                $$\mu_* = \mathbf{k}_*^T (\mathbf{K} + \sigma_n^2 \mathbf{I})^{-1}\mathbf{y}, \quad \sigma_*^2 = k_* - \mathbf{k}_*^T (\mathbf{K} + \sigma_n^2 \mathbf{I})^{-1}\mathbf{k}_*$$
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6;">
+                Notice how the confidence ribbon <strong>pinches tight</strong> near observed training cycles and <strong>widens significantly</strong> into degradation regimes with fewer samples.
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-tertiary); border-top: 1px solid var(--border-subtle); padding-top: 0.5rem;">
+              <span>Analytical Risk:</span>
+              <span style="color: var(--status-critical); font-weight: 600;">P(SoH ≤ 70%) = Φ((70 - μ) / σ)</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Section 5: Interactive Model Architecture & Hyperparameter Matrix -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">5. Model Architecture & Hyperparameter Matrix</span>
+          <span class="panel-meta">Interactive Algorithm Inspector</span>
+        </div>
+
+        <div style="display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap;">
+          <button class="preset-pill model-inspect-btn active" data-model="Ridge">Ridge Baseline</button>
+          <button class="preset-pill model-inspect-btn" data-model="ElasticNet">ElasticNet</button>
+          <button class="preset-pill model-inspect-btn" data-model="SVR">Support Vector (SVR)</button>
+          <button class="preset-pill model-inspect-btn" data-model="GPR">Gaussian Process (GPR)</button>
+          <button class="preset-pill model-inspect-btn" data-model="XGBoost">XGBoost Ensemble</button>
+        </div>
+
+        <div id="modelInspectorCard" style="background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1.15rem;">
+          <!-- Dynamically populated via JS -->
+        </div>
+
+        <!-- Global Hyperparameter Comparison Table -->
+        <div style="margin-top: 1.25rem;">
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem;">
+            Comparative Hyperparameter & Algorithmic Specifications
+          </div>
+          <div class="table-wrapper">
+            <table class="instrument-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Key Hyperparameters</th>
+                  <th>Configured Values</th>
+                  <th>Search Bounds / Default</th>
+                  <th>Physical & Algorithmic Rationale</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Ridge</strong></td>
+                  <td><code>alpha</code> (\(\alpha\))</td>
+                  <td><code>1.0</code></td>
+                  <td>\([10^{-4}, 10^3]\)</td>
+                  <td>Standardizes coefficient scales against collinear features, preventing overfit to noisy \(R_{ct}\).</td>
+                </tr>
+                <tr>
+                  <td><strong>ElasticNet</strong></td>
+                  <td><code>alpha</code>, <code>l1_ratio</code></td>
+                  <td><code>0.1</code> / <code>0.5</code></td>
+                  <td>\(\rho \in [0, 1]\)</td>
+                  <td>Balances sparsity with collinear grouping stability across physical degradation features.</td>
+                </tr>
+                <tr>
+                  <td><strong>SVR</strong></td>
+                  <td><code>C</code>, <code>epsilon</code> (\(\epsilon\)), <code>gamma</code></td>
+                  <td><code>10.0</code> / <code>0.1</code> / <code>scale</code></td>
+                  <td>\(C \in [0.1, 100]\)</td>
+                  <td>Constructs an \(\epsilon\)-tube robust against sensor noise, penalizing deviations outside \(\pm 0.1\%\) SoH.</td>
+                </tr>
+                <tr>
+                  <td><strong>GPR</strong></td>
+                  <td>Kernel, <code>n_restarts</code></td>
+                  <td><code>Matérn 5/2 + WhiteKernel</code>, <code>10</code></td>
+                  <td>\(\nu = 2.5, \sigma_n^2 = 0.01\)</td>
+                  <td>Twice-differentiable paths match continuous Li-ion wear; multiple restarts avoid local marginal log-likelihood minima.</td>
+                </tr>
+                <tr>
+                  <td><strong>XGBoost</strong></td>
+                  <td><code>n_estimators</code>, <code>max_depth</code>, <code>learning_rate</code></td>
+                  <td><code>100</code> / <code>3</code> / <code>0.05</code></td>
+                  <td>Depth: \([2, 6]\), \(\eta \in [0.01, 0.2]\)</td>
+                  <td>Shallow trees (\(d=3\)) limit complex interaction overfitting, crucial for cross-cell LOBO generalizability.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </section>

@@ -983,6 +983,217 @@ select {
   border-radius: 4px;
 }
 
+/* ============================================================ */
+/* MATH & METHODOLOGY SPECIFICATION STYLING                     */
+/* ============================================================ */
+.method-hero-panel {
+  margin-bottom: 1.15rem;
+  background: linear-gradient(180deg, rgba(24, 29, 42, 0.6) 0%, rgba(18, 21, 30, 0.9) 100%);
+  border: 1px solid var(--border-subtle);
+}
+
+.pipeline-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.95rem;
+  margin-top: 0.6rem;
+}
+
+.pipeline-flow-card {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.pipeline-step-badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+
+.pipeline-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.45rem;
+}
+
+.pipeline-desc {
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.pipeline-desc code {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  color: var(--accent-cyan);
+}
+
+.math-models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.math-model-card {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.math-model-card.highlight-card {
+  border-color: rgba(56, 189, 248, 0.3);
+  background: linear-gradient(180deg, rgba(24, 32, 48, 0.8) 0%, rgba(18, 21, 30, 0.9) 100%);
+}
+
+.math-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  gap: 0.5rem;
+}
+
+.math-card-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.math-card-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.katex-equation-block {
+  background: #080a0f;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  padding: 0.55rem 0.85rem;
+  margin: 0.45rem 0;
+  overflow-x: auto;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.katex-equation-block .katex-display {
+  margin: 0.2rem 0;
+}
+
+.math-detail-text {
+  font-size: 0.76rem;
+  color: var(--text-tertiary);
+  margin-top: 0.45rem;
+  line-height: 1.5;
+}
+
+.proofs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.proof-card {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.proof-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.proof-body {
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.proof-body p {
+  margin: 0.4rem 0;
+}
+
+/* Pipeline Diagram & Interactive Flow */
+.pipeline-diagram-wrapper {
+  background: #090b10;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+}
+
+.pipeline-svg-flow {
+  min-width: 760px;
+  display: block;
+  margin: 0 auto;
+}
+
+.pipeline-svg-node {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pipeline-svg-node rect {
+  transition: all 0.2s ease;
+}
+
+.pipeline-svg-node:hover rect {
+  stroke: #38bdf8 !important;
+  fill: #182032 !important;
+}
+
+.pipeline-svg-node.active rect {
+  stroke: #38bdf8 !important;
+  fill: #1b263b !important;
+}
+
+/* Button Active States */
+.ic-mode-btn.active,
+.model-inspect-btn.active {
+  background-color: var(--accent-primary) !important;
+  color: #0b0d13 !important;
+  border-color: var(--accent-primary) !important;
+  font-weight: 600;
+}
+
+.model-inspector-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 860px) {
+  .model-inspector-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   body {
     background: #fff !important;
