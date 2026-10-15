@@ -35,6 +35,14 @@
         </svg>
         Simulator & Sensitivities
       </button>
+      <button class="segment-btn" data-tab="tab-dataset">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+        </svg>
+        Dataset Explorer
+      </button>
       <button class="segment-btn" data-tab="tab-cycles">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
@@ -275,7 +283,158 @@
     </section>
 
     <!-- ============================================================ -->
-    <!-- VIEW 2: NASA CYCLE & WAVEFORM EXPLORER                       -->
+    <!-- VIEW 2: NASA PCoE DATASET EXPLORER                           -->
+    <!-- ============================================================ -->
+    <section id="tab-dataset" class="view-section">
+
+      <!-- Summary KPI Strip -->
+      <div class="dataset-stats-strip">
+        <div class="stat-card">
+          <div class="stat-label">Synchronized Cycles</div>
+          <div class="stat-value" id="datasetTotalCycles">632</div>
+          <div class="stat-sub">Across 4 Battery Cells</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Monitored Cells</div>
+          <div class="stat-value">B0005, B0006, B0007, B0018</div>
+          <div class="stat-sub">18650 Li-ion · 24°C Ambient</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">EoL Threshold</div>
+          <div class="stat-value">70.0% SoH <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-tertiary);">(1.40 Ah)</span></div>
+          <div class="stat-sub">Nominal 2.00 Ah Rating</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Physical Channels</div>
+          <div class="stat-value">9 Extracted Features</div>
+          <div class="stat-sub">CC/CV · dQ/dV · ΔT · EIS Re/Rct</div>
+        </div>
+      </div>
+
+      <!-- Dataset Filter & Control Toolbar -->
+      <div class="panel dataset-toolbar-panel">
+        <div class="dataset-filter-group">
+          <span class="preset-title">Filter Cell:</span>
+          <div class="dataset-cell-pills" id="datasetCellFilterPills">
+            <button class="preset-pill dataset-filter-btn active" data-cell="all">All (632)</button>
+            <button class="preset-pill dataset-filter-btn" data-cell="B0005">B0005 (167)</button>
+            <button class="preset-pill dataset-filter-btn" data-cell="B0006">B0006 (167)</button>
+            <button class="preset-pill dataset-filter-btn" data-cell="B0007">B0007 (167)</button>
+            <button class="preset-pill dataset-filter-btn" data-cell="B0018">B0018 (131)</button>
+          </div>
+        </div>
+
+        <div class="dataset-controls-row">
+          <div class="control-item">
+            <label class="control-label">Health Status</label>
+            <select id="datasetHealthFilter" class="select-input">
+              <option value="all">All Cycles (0 - 100%)</option>
+              <option value="nominal">Nominal (&gt; 80% SoH)</option>
+              <option value="caution">Degraded (70% - 80% SoH)</option>
+              <option value="eol">End-of-Life (&lt; 70% SoH)</option>
+            </select>
+          </div>
+
+          <div class="control-item">
+            <label class="control-label">Sort Column</label>
+            <select id="datasetSortCol" class="select-input">
+              <option value="cycle">Cycle Index</option>
+              <option value="soh">State of Health (SoH)</option>
+              <option value="capacity">Discharge Capacity (Ah)</option>
+              <option value="t_cc">CC Duration (t_cc)</option>
+              <option value="t_cv">CV Duration (t_cv)</option>
+              <option value="dq_dv_peak">dQ/dV Peak</option>
+              <option value="v_at_peak">Voltage at Peak</option>
+              <option value="delta_T_max">ΔT Max Rise</option>
+              <option value="delta_V_ohmic">Ohmic Drop (ΔV)</option>
+              <option value="Re">Bulk Res. (Re)</option>
+              <option value="Rct">Charge-Xfer (Rct)</option>
+              <option value="rest_time_hours">Rest Duration</option>
+            </select>
+          </div>
+
+          <div class="control-item">
+            <label class="control-label">Sort Order</label>
+            <select id="datasetSortOrder" class="select-input">
+              <option value="asc">Ascending (Low → High)</option>
+              <option value="desc">Descending (High → Low)</option>
+            </select>
+          </div>
+
+          <div class="control-item">
+            <label class="control-label">Page Size</label>
+            <select id="datasetPageSize" class="select-input">
+              <option value="25">25 rows</option>
+              <option value="50" selected>50 rows</option>
+              <option value="100">100 rows</option>
+              <option value="650">All rows</option>
+            </select>
+          </div>
+
+          <div class="control-item" style="margin-left: auto;">
+            <label class="control-label">&nbsp;</label>
+            <button id="btnExportDatasetCsv" class="btn-quiet">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dataset Table Rack -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">Synchronized Feature Matrix</span>
+          <span id="datasetRecordSummary" class="panel-meta">Showing 1–50 of 632 records</span>
+        </div>
+
+        <div class="table-wrapper dataset-table-container">
+          <table class="instrument-table dataset-table">
+            <thead>
+              <tr>
+                <th>Cell</th>
+                <th style="text-align: right;">Cycle</th>
+                <th style="text-align: right;">Capacity</th>
+                <th style="text-align: right;">SoH</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: right;">t<sub>cc</sub> (s)</th>
+                <th style="text-align: right;">t<sub>cv</sub> (s)</th>
+                <th style="text-align: right;">(dQ/dV)<sub>pk</sub></th>
+                <th style="text-align: right;">V<sub>pk</sub> (V)</th>
+                <th style="text-align: right;">ΔT<sub>max</sub> (°C)</th>
+                <th style="text-align: right;">ΔV<sub>ohm</sub> (V)</th>
+                <th style="text-align: right;">R<sub>e</sub> (Ω)</th>
+                <th style="text-align: right;">R<sub>ct</sub> (Ω)</th>
+                <th style="text-align: right;">t<sub>rest</sub> (h)</th>
+                <th style="text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="datasetTableBody">
+              <!-- Populated dynamically via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls Bar -->
+        <div class="dataset-pagination-bar">
+          <div id="datasetPaginationInfo" style="font-size: 0.78rem; color: var(--text-tertiary); font-family: var(--font-mono);">
+            Page 1 of 13 (632 records)
+          </div>
+          <div class="pagination-buttons">
+            <button id="btnDatasetPrev" class="btn-quiet" disabled>&larr; Previous</button>
+            <span id="datasetCurrentPageBadge" class="brand-pill">1</span>
+            <button id="btnDatasetNext" class="btn-quiet">Next &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 3: NASA CYCLE & WAVEFORM EXPLORER                       -->
     <!-- ============================================================ -->
     <section id="tab-cycles" class="view-section">
       

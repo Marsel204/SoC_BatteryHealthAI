@@ -11,6 +11,16 @@ let debounceTimer = null;
 let currentLoadedCycleFeatures = null;
 let latestPredictionData = null;
 
+// Dataset Explorer State
+let datasetPage = 1;
+let datasetPageSize = 50;
+let datasetSelectedCell = "all";
+let datasetHealthFilter = "all";
+let datasetSortCol = "cycle";
+let datasetSortOrder = "asc";
+let datasetTotalCount = 632;
+let currentDatasetRecords = [];
+
 const FEATURE_NAMES = [
   "t_cc",
   "t_cv",
@@ -51,10 +61,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupTabs();
   setupSliders();
   setupCycleScrubber();
+  setupDatasetTab();
   setupModals();
   initCharts();
   await fetchDatasetSummary();
   await fetchFiguresCatalog();
+  await fetchDatasetRecords();
   // Trigger initial prediction
   triggerPredict();
   // Load initial cycle telemetry
@@ -706,4 +718,261 @@ function buildExamReportContent() {
       <p><strong>• Phase Transition Retention:</strong> Attenuation of (dQ/dV)_peak reflects Loss of Active Material (LAM) and Loss of Lithium Inventory (LLI) with positive sensitivity +${(jac.dq_dv_peak || 0).toFixed(4)} % per Ah/V.</p>
     </div>
   `;
+}
+
+// ============================================================
+// DATASET EXPLORER CONTROLLER
+// ============================================================
+function setupDatasetTab() {
+  // Cell filter pills
+  const cellBtns = document.querySelectorAll(".dataset-filter-btn");
+  cellBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      cellBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      datasetSelectedCell = btn.getAttribute("data-cell") || "all";
+      datasetPage = 1;
+      fetchDatasetRecords();
+    });
+  });
+
+  // Health regime filter
+  document.getElementById("datasetHealthFilter")?.addEventListener("change", (e) => {
+    datasetHealthFilter = e.target.value;
+    datasetPage = 1;
+    fetchDatasetRecords();
+  });
+
+  // Sort column
+  document.getElementById("datasetSortCol")?.addEventListener("change", (e) => {
+    datasetSortCol = e.target.value;
+    fetchDatasetRecords();
+  });
+
+  // Sort order
+  document.getElementById("datasetSortOrder")?.addEventListener("change", (e) => {
+    datasetSortOrder = e.target.value;
+    fetchDatasetRecords();
+  });
+
+  // Page size
+  document.getElementById("datasetPageSize")?.addEventListener("change", (e) => {
+    datasetPageSize = parseInt(e.target.value, 10);
+    datasetPage = 1;
+    fetchDatasetRecords();
+  });
+
+  // Pagination Previous
+  document.getElementById("btnDatasetPrev")?.addEventListener("click", () => {
+    if (datasetPage > 1) {
+      datasetPage--;
+      fetchDatasetRecords();
+    }
+  });
+
+  // Pagination Next
+  document.getElementById("btnDatasetNext")?.addEventListener("click", () => {
+    const totalPages = Math.max(1, Math.ceil(datasetTotalCount / datasetPageSize));
+    if (datasetPage < totalPages) {
+      datasetPage++;
+      fetchDatasetRecords();
+    }
+  });
+
+  // Export CSV
+  document.getElementById("btnExportDatasetCsv")?.addEventListener("click", () => {
+    exportDatasetCsv();
+  });
+}
+
+async function fetchDatasetRecords() {
+  const tbody = document.getElementById("datasetTableBody");
+  if (!tbody) return;
+
+  const params = new URLSearchParams();
+  if (datasetSelectedCell && datasetSelectedCell !== "all") {
+    params.set("battery_id", datasetSelectedCell);
+  }
+  if (datasetHealthFilter === "nominal") {
+    params.set("min_soh", "80.0");
+  } else if (datasetHealthFilter === "caution") {
+    params.set("min_soh", "70.0");
+    params.set("max_soh", "80.0");
+  } else if (datasetHealthFilter === "eol") {
+    params.set("max_soh", "70.0");
+  }
+
+  params.set("sort_by", datasetSortCol);
+  params.set("order", datasetSortOrder);
+  params.set("limit", datasetPageSize.toString());
+  params.set("offset", ((datasetPage - 1) * datasetPageSize).toString());
+
+  try {
+    const res = await fetch(`/api/dataset/records?${params.toString()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    currentDatasetRecords = data.records || [];
+    datasetTotalCount = data.total_count || 0;
+
+    const totalPages = Math.max(1, Math.ceil(datasetTotalCount / datasetPageSize));
+    const startRec = datasetTotalCount === 0 ? 0 : data.offset + 1;
+    const endRec = Math.min(data.offset + currentDatasetRecords.length, datasetTotalCount);
+
+    const summaryEl = document.getElementById("datasetRecordSummary");
+    if (summaryEl) {
+      summaryEl.textContent = `Showing ${startRec}–${endRec} of ${datasetTotalCount} records`;
+    }
+
+    const pageInfoEl = document.getElementById("datasetPaginationInfo");
+    if (pageInfoEl) {
+      pageInfoEl.textContent = `Page ${datasetPage} of ${totalPages} (${datasetTotalCount} records)`;
+    }
+
+    const badgeEl = document.getElementById("datasetCurrentPageBadge");
+    if (badgeEl) {
+      badgeEl.textContent = `${datasetPage}`;
+    }
+
+    const prevBtn = document.getElementById("btnDatasetPrev");
+    if (prevBtn) prevBtn.disabled = datasetPage <= 1;
+
+    const nextBtn = document.getElementById("btnDatasetNext");
+    if (nextBtn) nextBtn.disabled = datasetPage >= totalPages;
+
+    renderDatasetRows(currentDatasetRecords);
+  } catch (err) {
+    console.error("Failed to fetch dataset records:", err);
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: var(--text-tertiary); padding: 2rem;">Error loading records.</td></tr>`;
+  }
+}
+
+function renderDatasetRows(records) {
+  const tbody = document.getElementById("datasetTableBody");
+  if (!tbody) return;
+
+  if (!records || records.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align: center; color: var(--text-tertiary); padding: 2.5rem 1rem;">No records match the current filter criteria.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = records
+    .map((r, idx) => {
+      let statusBadge = "";
+      let cellClass = "";
+      if (r.soh >= 80.0) {
+        statusBadge = '<span class="status-badge nominal" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">Nominal</span>';
+        cellClass = "cell-nominal";
+      } else if (r.soh >= 70.0) {
+        statusBadge = '<span class="status-badge caution" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">Degraded</span>';
+        cellClass = "cell-caution";
+      } else {
+        statusBadge = '<span class="status-badge critical" style="font-size: 0.68rem; padding: 0.15rem 0.45rem;">EoL</span>';
+        cellClass = "cell-critical";
+      }
+
+      return `
+        <tr>
+          <td style="font-weight: 600; color: var(--text-primary); font-family: var(--font-mono);">${r.battery_id}</td>
+          <td style="text-align: right; color: var(--accent-cyan); font-weight: 600;">${r.cycle}</td>
+          <td style="text-align: right;">${Number(r.capacity).toFixed(3)}</td>
+          <td style="text-align: right; font-weight: 600;" class="${cellClass}">${Number(r.soh).toFixed(2)}%</td>
+          <td style="text-align: center;">${statusBadge}</td>
+          <td style="text-align: right;">${Number(r.t_cc).toFixed(1)}</td>
+          <td style="text-align: right;">${Number(r.t_cv).toFixed(1)}</td>
+          <td style="text-align: right;">${Number(r.dq_dv_peak).toFixed(2)}</td>
+          <td style="text-align: right;">${Number(r.v_at_peak).toFixed(3)}</td>
+          <td style="text-align: right;">${Number(r.delta_T_max).toFixed(2)}</td>
+          <td style="text-align: right;">${Number(r.delta_V_ohmic).toFixed(3)}</td>
+          <td style="text-align: right;">${Number(r.Re).toFixed(4)}</td>
+          <td style="text-align: right;">${Number(r.Rct).toFixed(4)}</td>
+          <td style="text-align: right;">${Number(r.rest_time_hours).toFixed(1)}</td>
+          <td style="text-align: center;">
+            <button class="btn-quiet btn-row-simulate" data-idx="${idx}" title="Simulate this cycle in workbench">
+              Simulate
+            </button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  // Attach simulate click handler
+  tbody.querySelectorAll(".btn-row-simulate").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.getAttribute("data-idx"), 10);
+      const row = currentDatasetRecords[idx];
+      if (row) {
+        applyFeatures(row);
+        const presetLbl = document.getElementById("activePresetLabel");
+        if (presetLbl) {
+          presetLbl.textContent = `${row.battery_id} · Cycle ${row.cycle} (${Number(row.soh).toFixed(1)}% SoH)`;
+        }
+        // Switch to simulator tab
+        document.querySelector('[data-tab="tab-simulator"]')?.click();
+      }
+    });
+  });
+}
+
+async function exportDatasetCsv() {
+  // Fetch all filtered records for export
+  const params = new URLSearchParams();
+  if (datasetSelectedCell && datasetSelectedCell !== "all") {
+    params.set("battery_id", datasetSelectedCell);
+  }
+  if (datasetHealthFilter === "nominal") {
+    params.set("min_soh", "80.0");
+  } else if (datasetHealthFilter === "caution") {
+    params.set("min_soh", "70.0");
+    params.set("max_soh", "80.0");
+  } else if (datasetHealthFilter === "eol") {
+    params.set("max_soh", "70.0");
+  }
+  params.set("sort_by", datasetSortCol);
+  params.set("order", datasetSortOrder);
+  params.set("limit", "1000");
+  params.set("offset", "0");
+
+  try {
+    const res = await fetch(`/api/dataset/records?${params.toString()}`);
+    const data = await res.json();
+    const rows = data.records || [];
+    if (rows.length === 0) return;
+
+    const headers = [
+      "battery_id",
+      "cycle",
+      "capacity",
+      "soh",
+      "t_cc",
+      "t_cv",
+      "dq_dv_peak",
+      "v_at_peak",
+      "delta_T_max",
+      "delta_V_ohmic",
+      "Re",
+      "Rct",
+      "rest_time_hours",
+    ];
+
+    const csvContent =
+      headers.join(",") +
+      "\n" +
+      rows.map((r) => headers.map((h) => r[h]).join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `nasa_battery_dataset_${datasetSelectedCell}_${Date.now()}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    console.error("Failed to export CSV:", err);
+  }
 }

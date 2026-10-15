@@ -121,3 +121,37 @@ def test_figures_catalog_endpoint(client):
     assert fig_res.status_code == 200
 
 
+def test_dataset_records_endpoint(client):
+    # Unfiltered request
+    res = client.get("/api/dataset/records?limit=25&offset=0")
+    assert res.status_code == 200
+    data = res.json()
+    assert "total_count" in data
+    assert data["total_count"] == 632
+    assert len(data["records"]) == 25
+    record = data["records"][0]
+    for key in ["battery_id", "cycle", "soh", "capacity", "t_cc", "t_cv", "Re", "Rct"]:
+        assert key in record
+
+    # Filtered by battery_id
+    res_b5 = client.get("/api/dataset/records?battery_id=B0005&limit=10")
+    assert res_b5.status_code == 200
+    data_b5 = res_b5.json()
+    assert all(r["battery_id"] == "B0005" for r in data_b5["records"])
+    assert data_b5["total_count"] > 100
+
+    # Sort descending
+    res_sort = client.get("/api/dataset/records?sort_by=soh&order=desc&limit=5")
+    assert res_sort.status_code == 200
+    sohs = [r["soh"] for r in res_sort.json()["records"]]
+    assert sohs == sorted(sohs, reverse=True)
+
+
+def test_dataset_tab_presence_in_html(client):
+    res = client.get("/")
+    assert res.status_code == 200
+    assert 'data-tab="tab-dataset"' in res.text
+    assert 'id="tab-dataset"' in res.text
+
+
+

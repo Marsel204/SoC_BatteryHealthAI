@@ -282,6 +282,47 @@ def get_dataset_summary() -> Dict[str, Any]:
     }
 
 
+@app.get("/api/dataset/records")
+def get_dataset_records(
+    battery_id: Optional[str] = None,
+    min_soh: Optional[float] = None,
+    max_soh: Optional[float] = None,
+    sort_by: str = "cycle",
+    order: str = "asc",
+    limit: int = 50,
+    offset: int = 0,
+) -> Dict[str, Any]:
+    """Return paginated, filterable, and sorted feature records from the dataset."""
+    engine = get_engine()
+    if engine.df is None:
+        raise HTTPException(status_code=500, detail="Dataset not loaded.")
+
+    df = engine.df.copy()
+
+    if battery_id and battery_id != "all":
+        df = df[df["battery_id"] == battery_id]
+
+    if min_soh is not None:
+        df = df[df["soh"] >= min_soh]
+    if max_soh is not None:
+        df = df[df["soh"] <= max_soh]
+
+    if sort_by in df.columns:
+        ascending = (order.lower() == "asc")
+        df = df.sort_values(by=sort_by, ascending=ascending)
+
+    total_count = len(df)
+    sliced = df.iloc[offset : offset + limit]
+    records = sliced.to_dict(orient="records")
+
+    return {
+        "total_count": total_count,
+        "limit": limit,
+        "offset": offset,
+        "records": records,
+    }
+
+
 @app.post("/api/predict")
 def predict_soh(payload: BatteryFeaturesPayload) -> Dict[str, Any]:
     """Execute real-time multi-model prediction and uncertainty estimation."""
