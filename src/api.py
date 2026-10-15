@@ -57,6 +57,7 @@ class PrognosticsEngine:
         self.models: Dict[str, Any] = {}
         self.ridge_model: Optional[RidgeBaseline] = None
         self.lobo_cache: Optional[Dict[str, Any]] = None
+        self.lobo_raw_cache: Optional[Dict[str, Any]] = None
         self.aligned_cache: Dict[str, List[Any]] = {}
 
     def initialize(self) -> None:
@@ -171,6 +172,7 @@ class PrognosticsEngine:
 
         evaluator = BatteryLOBOEvaluator(self.df)
         raw_results = evaluator.evaluate_all_models()
+        self.lobo_raw_cache = raw_results
 
         # Format serializable summary
         summary: Dict[str, Any] = {}
@@ -193,6 +195,41 @@ class PrognosticsEngine:
             }
         self.lobo_cache = summary
         return self.lobo_cache
+
+    def get_lobo_predictions_for_battery(self, battery_id: str) -> Dict[str, Any]:
+        """Retrieve actual vs predicted trajectory for a held-out test battery across all 5 models."""
+        if self.lobo_raw_cache is None:
+            self.get_lobo_results()
+
+        if self.lobo_raw_cache is None:
+            raise RuntimeError("Failed to compute LOBO results.")
+
+        res: Dict[str, Any] = {
+            "battery_id": battery_id,
+            "cycles": [],
+            "y_true": [],
+            "models": {},
+        }
+
+        first_model = True
+        for m_name, m_res in self.lobo_raw_cache.items():
+            for fold in m_res["folds"]:
+                if fold["test_battery"] == battery_id:
+                    if first_model:
+                        res["cycles"] = [int(c) for c in fold["cycles"]]
+                        res["y_true"] = [float(y) for y in fold["y_true"]]
+                        first_model = False
+
+                    model_data: Dict[str, Any] = {
+                        "y_pred": [float(p) for p in fold["y_pred"]],
+                        "metrics": fold["metrics"],
+                    }
+                    if fold.get("uncertainty") is not None:
+                        model_data["uncertainty"] = [float(u) for u in fold["uncertainty"]]
+                    res["models"][m_name] = model_data
+                    break
+
+        return res
 
     def get_aligned_cycles(self, battery_id: str) -> List[Any]:
         """Cache and retrieve aligned cycles for a battery."""
@@ -454,6 +491,16 @@ def get_lobo_benchmark() -> Dict[str, Any]:
     """Get Leave-One-Battery-Out cross-validation benchmark metrics."""
     engine = get_engine()
     return engine.get_lobo_results()
+
+
+@app.get("/api/lobo/predictions/{battery_id}")
+def get_lobo_battery_predictions(battery_id: str) -> Dict[str, Any]:
+    """Retrieve actual vs predicted trajectory for a held-out test battery across all 5 models."""
+    engine = get_engine()
+    if battery_id not in ["B0005", "B0006", "B0007", "B0018"]:
+        raise HTTPException(status_code=404, detail=f"Battery {battery_id} not found.")
+    return engine.get_lobo_predictions_for_battery(battery_id)
+
 
 
 @app.get("/api/cycle/{battery_id}/{cycle_idx}")

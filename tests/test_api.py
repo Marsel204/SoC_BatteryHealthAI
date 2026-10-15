@@ -177,5 +177,34 @@ def test_methodology_tab_presence_in_html(client):
     assert "Hyperparameter" in res.text
 
 
+def test_model_visual_charts_presence(client):
+    res = client.get("/")
+    assert res.status_code == 200
+    assert 'id="modelInspectorCard"' in res.text
+    
+    js_res = client.get("/static/app.js")
+    assert js_res.status_code == 200
+    assert "modelVisualChart" in js_res.text
+    assert "loboComparisonChart" in js_res.text
+
+
+def test_lobo_predictions_endpoint(client):
+    res = client.get("/api/lobo/predictions/B0005")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["battery_id"] == "B0005"
+    assert "cycles" in data
+    assert len(data["cycles"]) > 0
+    assert "y_true" in data
+    assert "models" in data
+    for model_name in ["Ridge", "ElasticNet", "SVR", "GPR", "XGBoost"]:
+        assert model_name in data["models"]
+        assert "y_pred" in data["models"][model_name]
+        assert len(data["models"][model_name]["y_pred"]) == len(data["cycles"])
+    assert "uncertainty" in data["models"]["GPR"]
+
+
+
+
 
 

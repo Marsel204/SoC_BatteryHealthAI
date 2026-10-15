@@ -1012,6 +1012,37 @@
           </div>
         </div>
 
+        <!-- Cross-Model LOBO Generalization Trajectory Explorer -->
+        <div style="margin-top: 1.5rem; background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1.15rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">
+                Cross-Model LOBO Generalization Trajectory Explorer
+              </div>
+              <div style="font-size: 0.74rem; color: var(--text-tertiary);">
+                Compare held-out unseen test cell degradation trajectories across all 5 models under Leave-One-Battery-Out cross-validation.
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <label for="loboModelTestCell" style="font-size: 0.76rem; color: var(--text-secondary); font-family: var(--font-mono);">Held-Out Cell:</label>
+              <select id="loboModelTestCell" class="select-input" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
+                <option value="B0005" selected>B0005 (Nominal Room Temp 24°C)</option>
+                <option value="B0006">B0006 (Accelerated Fade Cell)</option>
+                <option value="B0007">B0007 (Extended Rest Plateau)</option>
+                <option value="B0018">B0018 (Severe Thermal Degradation)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="chart-box" style="height: 320px;">
+            <canvas id="loboComparisonChart"></canvas>
+          </div>
+
+          <div id="loboComparisonStats" style="margin-top: 0.75rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; font-size: 0.75rem;">
+            <!-- Dynamically populated stats -->
+          </div>
+        </div>
+
       </div>
 
     </section>
