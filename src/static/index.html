@@ -3,221 +3,267 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Physics-Informed Battery SoH Prognostics | NASA PCoE</title>
+  <title>Battery State of Health Prognostics | NASA Ames PCoE</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <!-- Top Navigation Header -->
+  <!-- Top Application Bar -->
   <header class="app-header">
     <div class="header-brand">
-      <h1>🔋 Battery SoH Prognostics</h1>
-      <span class="badge badge-cyan">NASA PCoE 18650</span>
-      <span class="badge" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">Physics-Informed</span>
+      <div class="brand-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="16" height="10" rx="2" ry="2"></rect>
+          <line x1="22" y1="11" x2="22" y2="13"></line>
+        </svg>
+      </div>
+      <span class="brand-title">Battery SoH Prognostics</span>
+      <span class="brand-divider">/</span>
+      <span class="brand-subtitle">NASA PCoE 18650</span>
+      <span class="brand-pill">Physics-Informed · LOBO</span>
     </div>
+
+    <!-- Center Segmented Switcher -->
+    <nav class="segmented-nav">
+      <button class="segment-btn active" data-tab="tab-simulator">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+          <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+          <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+        </svg>
+        Simulator & Sensitivities
+      </button>
+      <button class="segment-btn" data-tab="tab-cycles">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        Cycle Telemetry
+      </button>
+      <button class="segment-btn" data-tab="tab-benchmark">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        Validation & Proofs
+      </button>
+    </nav>
     
+    <!-- Right Actions -->
     <div class="header-actions">
-      <button id="btnOpenReport" class="btn-action">📄 Export Exam Report</button>
-      <button id="btnQuickLightroom" class="btn-action">🖼️ Figures Lightroom</button>
-      <div class="status-indicator">
+      <button id="btnOpenReport" class="btn-header">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Export Report
+      </button>
+      <button id="btnQuickLightroom" class="btn-header">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        Figure Catalog
+      </button>
+      <div class="status-badge">
         <span class="status-dot"></span>
-        <span id="apiStatusText">Engine Ready (632 Cycles)</span>
+        <span id="apiStatusText">Engine Active (632 cycles)</span>
       </div>
     </div>
   </header>
 
-  <!-- Navigation View Tabs -->
-  <nav class="nav-tabs">
-    <button class="tab-btn active" data-tab="tab-simulator">🧪 Model Testing & Simulator</button>
-    <button class="tab-btn" data-tab="tab-cycles">📈 NASA Cycle & Waveform Explorer</button>
-    <button class="tab-btn" data-tab="tab-benchmark">📊 LOBO Benchmark & Figures</button>
-  </nav>
-
-  <!-- Main Container -->
-  <main class="main-container">
+  <!-- Main Viewport -->
+  <main class="main-viewport">
 
     <!-- ============================================================ -->
-    <!-- TAB 1: MODEL TESTING & SENSITIVITY WORKBENCH                 -->
+    <!-- VIEW 1: MODEL TESTING & SENSITIVITIES WORKBENCH              -->
     <!-- ============================================================ -->
-    <div id="tab-simulator" class="tab-content active">
+    <section id="tab-simulator" class="view-section active">
       
-      <!-- Preset Selection Group -->
-      <div class="preset-bar">
-        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-          <span class="preset-title">Aging Presets:</span>
-          <div class="preset-buttons">
-            <button class="preset-btn" data-preset="fresh_cell">🟢 Fresh Cell (Cycle 2, 92.6% SoH)</button>
-            <button class="preset-btn" data-preset="mid_life">🟡 Mid-Life (Cycle ~80, 82.0% SoH)</button>
-            <button class="preset-btn" data-preset="near_eol">🟠 Near-EoL (Cycle ~140, 70.5% SoH)</button>
-            <button class="preset-btn" data-preset="degraded">🔴 Degraded (Cycle ~165, 64.5% SoH)</button>
-            <button class="preset-btn" data-preset="regeneration_spike">⚡ Rest Regeneration (Δt=309h)</button>
-          </div>
+      <!-- Preset Selection Strip -->
+      <div class="preset-strip">
+        <div class="preset-group">
+          <span class="preset-title">Aging Regime:</span>
+          <button class="preset-pill" data-preset="fresh_cell">Fresh (Cycle 2)</button>
+          <button class="preset-pill" data-preset="mid_life">Mid-Life (Cycle 80)</button>
+          <button class="preset-pill" data-preset="near_eol">Near-EoL (Cycle 140)</button>
+          <button class="preset-pill" data-preset="degraded">Degraded (Cycle 165)</button>
+          <button class="preset-pill" data-preset="regeneration_spike">Diffusion Recovery</button>
         </div>
-        <button id="btnResetParams" class="btn-action" style="padding: 0.28rem 0.6rem; font-size: 0.75rem;">↺ Reset Defaults</button>
+        <button id="btnResetParams" class="btn-quiet">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path>
+          </svg>
+          Reset Parameters
+        </button>
       </div>
 
-      <div class="grid-2col">
+      <div class="workspace-grid">
 
-        <!-- Left Column: Feature Controls -->
-        <div class="controls-column">
-          <div class="card">
-            <div class="card-title">
-              <span>Physical Degradation Features</span>
-              <span id="activePresetLabel" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 500;">Custom Inputs</span>
+        <!-- Left Controls Column -->
+        <div class="panel-controls">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-heading">Physical Degradation Features</span>
+              <span id="activePresetLabel" class="panel-meta">Custom Input</span>
             </div>
 
             <!-- t_cc -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">Constant-Current Duration <span class="math-sub">(t<sub>cc</sub>)</span></span>
-                <span class="feature-value" id="val-t_cc">2850 s</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">CC Charge Time <span class="subscript">(t<sub>cc</sub>)</span></span>
+                <span class="param-val" id="val-t_cc">2850 s</span>
               </div>
-              <input type="range" class="slider" id="slider-t_cc" min="800" max="4200" step="10" value="2850">
+              <input type="range" class="range-slider" id="slider-t_cc" min="800" max="4200" step="10" value="2850">
             </div>
 
             <!-- t_cv -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">Constant-Voltage Duration <span class="math-sub">(t<sub>cv</sub>)</span></span>
-                <span class="feature-value" id="val-t_cv">6200 s</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">CV Charge Time <span class="subscript">(t<sub>cv</sub>)</span></span>
+                <span class="param-val" id="val-t_cv">6200 s</span>
               </div>
-              <input type="range" class="slider" id="slider-t_cv" min="2000" max="9500" step="20" value="6200">
+              <input type="range" class="range-slider" id="slider-t_cv" min="2000" max="9500" step="20" value="6200">
             </div>
 
             <!-- dq_dv_peak -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">IC Peak Amplitude <span class="math-sub">((dQ/dV)<sub>peak</sub>)</span></span>
-                <span class="feature-value" id="val-dq_dv_peak">4.60 Ah/V</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">IC Peak Height <span class="subscript">((dQ/dV)<sub>peak</sub>)</span></span>
+                <span class="param-val" id="val-dq_dv_peak">4.60 Ah/V</span>
               </div>
-              <input type="range" class="slider" id="slider-dq_dv_peak" min="1.0" max="7.0" step="0.05" value="4.60">
+              <input type="range" class="range-slider" id="slider-dq_dv_peak" min="1.0" max="7.0" step="0.05" value="4.60">
             </div>
 
             <!-- v_at_peak -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">Voltage at Peak <span class="math-sub">(V<sub>peak</sub>)</span></span>
-                <span class="feature-value" id="val-v_at_peak">3.985 V</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">Peak Voltage <span class="subscript">(V<sub>peak</sub>)</span></span>
+                <span class="param-val" id="val-v_at_peak">3.985 V</span>
               </div>
-              <input type="range" class="slider" id="slider-v_at_peak" min="3.85" max="4.15" step="0.005" value="3.985">
+              <input type="range" class="range-slider" id="slider-v_at_peak" min="3.85" max="4.15" step="0.005" value="3.985">
             </div>
 
             <!-- delta_T_max -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">Max Temperature Rise <span class="math-sub">(ΔT<sub>max</sub>)</span></span>
-                <span class="feature-value" id="val-delta_T_max">14.2 °C</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">Thermal Rise <span class="subscript">(ΔT<sub>max</sub>)</span></span>
+                <span class="param-val" id="val-delta_T_max">14.2 °C</span>
               </div>
-              <input type="range" class="slider" id="slider-delta_T_max" min="8.0" max="22.0" step="0.1" value="14.2">
+              <input type="range" class="range-slider" id="slider-delta_T_max" min="8.0" max="22.0" step="0.1" value="14.2">
             </div>
 
             <!-- delta_V_ohmic -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">Initial Ohmic Drop <span class="math-sub">(ΔV<sub>ohmic</sub>)</span></span>
-                <span class="feature-value" id="val-delta_V_ohmic">0.220 V</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">Ohmic Step <span class="subscript">(ΔV<sub>ohmic</sub>)</span></span>
+                <span class="param-val" id="val-delta_V_ohmic">0.220 V</span>
               </div>
-              <input type="range" class="slider" id="slider-delta_V_ohmic" min="0.12" max="0.38" step="0.005" value="0.220">
+              <input type="range" class="range-slider" id="slider-delta_V_ohmic" min="0.12" max="0.38" step="0.005" value="0.220">
             </div>
 
             <!-- Re -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">Electrolyte Resistance <span class="math-sub">(R<sub>e</sub>)</span></span>
-                <span class="feature-value" id="val-Re">0.052 Ω</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">Electrolyte Resistance <span class="subscript">(R<sub>e</sub>)</span></span>
+                <span class="param-val" id="val-Re">0.052 Ω</span>
               </div>
-              <input type="range" class="slider" id="slider-Re" min="0.02" max="0.12" step="0.001" value="0.052">
+              <input type="range" class="range-slider" id="slider-Re" min="0.02" max="0.12" step="0.001" value="0.052">
             </div>
 
             <!-- Rct -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">Charge-Transfer Resistance <span class="math-sub">(R<sub>ct</sub>)</span></span>
-                <span class="feature-value" id="val-Rct">0.075 Ω</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">Charge-Transfer Impedance <span class="subscript">(R<sub>ct</sub>)</span></span>
+                <span class="param-val" id="val-Rct">0.075 Ω</span>
               </div>
-              <input type="range" class="slider" id="slider-Rct" min="0.03" max="0.22" step="0.002" value="0.075">
+              <input type="range" class="range-slider" id="slider-Rct" min="0.03" max="0.22" step="0.002" value="0.075">
             </div>
 
             <!-- rest_time_hours -->
-            <div class="feature-control">
-              <div class="feature-header">
-                <span class="feature-label">Rest Duration <span class="math-sub">(t<sub>rest</sub>)</span></span>
-                <span class="feature-value" id="val-rest_time_hours">3.5 h</span>
+            <div class="param-row">
+              <div class="param-label-bar">
+                <span class="param-name">Inter-Cycle Rest <span class="subscript">(t<sub>rest</sub>)</span></span>
+                <span class="param-val" id="val-rest_time_hours">3.5 h</span>
               </div>
-              <input type="range" class="slider" id="slider-rest_time_hours" min="0.1" max="320.0" step="0.5" value="3.5">
+              <input type="range" class="range-slider" id="slider-rest_time_hours" min="0.1" max="320.0" step="0.5" value="3.5">
             </div>
 
           </div>
         </div>
 
-        <!-- Right Column: Model Inference & Diagnostics -->
-        <div class="results-column">
+        <!-- Right Instruments Column -->
+        <div class="panel-instruments">
 
-          <!-- Health Status Banner -->
-          <div id="healthBanner" class="status-banner status-optimal">
-            <div>
-              <strong id="healthTitle">CELL HEALTH: OPTIMAL</strong>
-              <div id="healthDesc" style="font-size: 0.8rem; opacity: 0.9;">Battery operates safely above the 70% End-of-Life threshold (1.4 Ah).</div>
+          <!-- Health Status Indicator Strip -->
+          <div id="healthBanner" class="status-strip nominal">
+            <div class="status-strip-left">
+              <span class="status-indicator-dot"></span>
+              <div>
+                <strong id="healthTitle">CELL STATE: NOMINAL</strong>
+                <span id="healthDesc" style="opacity: 0.8; margin-left: 0.4rem;">Operating above 70.0% End-of-Life threshold (1.40 Ah).</span>
+              </div>
             </div>
-            <div id="healthSoHVal" style="font-size: 1.75rem; font-weight: 700; font-family: var(--font-mono);">88.4%</div>
+            <div id="healthSoHVal" class="status-soh-metric">88.4%</div>
           </div>
 
-          <!-- Featured Primary GPR Model with Gaussian Epistemic Distribution -->
-          <div class="card" style="border-color: rgba(56, 189, 248, 0.35); background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(18, 27, 46, 0.85) 100%);">
-            <div class="card-title">
-              <span>Primary Physics Model: Gaussian Process Regression (GPR)</span>
-              <span class="badge badge-cyan">Epistemic Uncertainty</span>
+          <!-- Primary GPR Instrument with Gaussian Epistemic Uncertainty Curve -->
+          <div class="panel" style="border-color: rgba(56, 189, 248, 0.25);">
+            <div class="panel-header">
+              <span class="panel-heading">Primary Model: Gaussian Process Regression (GPR)</span>
+              <span class="panel-meta">Matérn 5/2 + WhiteKernel</span>
             </div>
             
-            <div class="hero-model-container">
-              <div class="hero-stats">
-                <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Estimated State of Health</div>
-                <div class="model-val" id="pred-GPR" style="color: var(--accent-blue); font-size: 2.2rem;">88.40%</div>
-                <div class="model-uncertainty" id="unc-GPR">95% Epistemic CI: [84.20%, 92.60%]</div>
-                <div id="eolProbText" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.35rem; font-family: var(--font-mono);">P(SoH ≤ 70% EoL): &lt; 0.01%</div>
+            <div class="instrument-split">
+              <div class="primary-stat-column">
+                <span class="stat-label">Estimated SoH</span>
+                <div class="stat-number" id="pred-GPR">88.40%</div>
+                <div class="stat-ci-badge" id="unc-GPR">95% CI: [84.20%, 92.60%]</div>
+                <div class="stat-risk-line" id="eolProbText">P(SoH ≤ 70% EoL): &lt; 0.01%</div>
               </div>
 
-              <div class="hero-curve-box">
+              <div class="curve-chart-box">
                 <canvas id="uncertaintyCurveChart"></canvas>
               </div>
             </div>
           </div>
 
-          <!-- Comparison Models Grid -->
-          <div class="predictions-grid">
-            <div class="model-card">
-              <div class="model-name">Ridge Baseline</div>
-              <div class="model-val" id="pred-Ridge">--</div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Linear L₂ Closed-Form</div>
+          <!-- Comparison Models Matrix -->
+          <div class="ensemble-grid">
+            <div class="ensemble-cell">
+              <div class="ensemble-name">Ridge Baseline</div>
+              <div class="ensemble-val" id="pred-Ridge">--</div>
+              <div class="ensemble-desc">Linear L₂ Closed-Form</div>
             </div>
 
-            <div class="model-card">
-              <div class="model-name">ElasticNet</div>
-              <div class="model-val" id="pred-ElasticNet">--</div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Sparse Mixed L₁ + L₂</div>
+            <div class="ensemble-cell">
+              <div class="ensemble-name">ElasticNet</div>
+              <div class="ensemble-val" id="pred-ElasticNet">--</div>
+              <div class="ensemble-desc">Mixed L₁ / L₂ Coordinate</div>
             </div>
 
-            <div class="model-card">
-              <div class="model-name">XGBoost</div>
-              <div class="model-val" id="pred-XGBoost">--</div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Nonlinear Trees</div>
+            <div class="ensemble-cell">
+              <div class="ensemble-name">XGBoost</div>
+              <div class="ensemble-val" id="pred-XGBoost">--</div>
+              <div class="ensemble-desc">Gradient Boosted Trees</div>
             </div>
 
-            <div class="model-card">
-              <div class="model-name">SVR (RBF)</div>
-              <div class="model-val" id="pred-SVR">--</div>
-              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">Kernel Dual-Space</div>
+            <div class="ensemble-cell">
+              <div class="ensemble-name">SVR (RBF)</div>
+              <div class="ensemble-val" id="pred-SVR">--</div>
+              <div class="ensemble-desc">Kernel Dual-Space</div>
             </div>
           </div>
 
-          <!-- Live Physical Sensitivities Chart -->
-          <div class="card">
-            <div class="card-title">
-              <span>Physical Jacobian Sensitivities <span class="math-sub">(∂SoH / ∂x<sub>i</sub>)</span></span>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">Thermodynamic Sign Audit</span>
+          <!-- Physical Jacobian Sensitivities Chart -->
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-heading">Jacobian Sensitivities <span class="subscript">(∂SoH / ∂x<sub>i</sub>)</span></span>
+              <span class="panel-meta">Thermodynamic Sign Audit</span>
             </div>
-            <div class="chart-container" style="height: 250px;">
+            <div class="chart-box" style="height: 240px;">
               <canvas id="jacobianChart"></canvas>
             </div>
           </div>
@@ -226,17 +272,17 @@
 
       </div>
 
-    </div>
+    </section>
 
     <!-- ============================================================ -->
-    <!-- TAB 2: NASA CYCLE & WAVEFORM EXPLORER                        -->
+    <!-- VIEW 2: NASA CYCLE & WAVEFORM EXPLORER                       -->
     <!-- ============================================================ -->
-    <div id="tab-cycles" class="tab-content">
+    <section id="tab-cycles" class="view-section">
       
-      <div class="card" style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;">
+      <div class="panel" style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;">
         <div>
-          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Battery Cell</label>
-          <select id="cellSelect" class="select-control">
+          <label style="font-size: 0.76rem; color: var(--text-tertiary); display: block; margin-bottom: 0.25rem;">Battery Cell</label>
+          <select id="cellSelect" class="select-input">
             <option value="B0005">B0005 (167 Cycles, Reached EoL)</option>
             <option value="B0006">B0006 (167 Cycles, Reached EoL)</option>
             <option value="B0007">B0007 (167 Cycles, Active)</option>
@@ -245,75 +291,80 @@
         </div>
 
         <div style="flex-grow: 1; min-width: 240px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.25rem;">
-            <span style="color: var(--text-muted);">Cycle Number</span>
-            <span id="cycleNumDisplay" style="font-family: var(--font-mono); font-weight: 600; color: var(--accent-blue);">Cycle 10</span>
+          <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 0.2rem;">
+            <span style="color: var(--text-tertiary);">Cycle Scrubber</span>
+            <span id="cycleNumDisplay" style="font-family: var(--font-mono); font-weight: 600; color: var(--accent-cyan);">Cycle 10</span>
           </div>
-          <input type="range" class="slider" id="cycleScrubber" min="2" max="168" value="10">
+          <input type="range" class="range-slider" id="cycleScrubber" min="2" max="168" value="10">
         </div>
 
-        <button id="btnLoadCycle" class="btn-primary" style="margin-top: 0.6rem;">📥 Load into Simulator</button>
+        <button id="btnLoadCycle" class="btn-solid" style="margin-top: 0.8rem;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"></path>
+          </svg>
+          Apply to Simulator
+        </button>
       </div>
 
-      <div class="chart-grid">
-        <div class="card">
-          <div class="card-title">
-            <span>CC-CV Charge Waveform (V & I)</span>
-            <span id="chargeInfoBadge" style="font-size: 0.78rem; color: var(--text-muted);">1.5A CC → 4.2V Cutoff</span>
+      <div class="dual-chart-row">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-heading">Charging Waveform (V & I)</span>
+            <span id="chargeInfoBadge" class="panel-meta">1.5A CC → 4.2V Cutoff</span>
           </div>
-          <div class="chart-container">
+          <div class="chart-box">
             <canvas id="chargeWaveformChart"></canvas>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <span>Incremental Capacity (dQ/dV) Profile</span>
-            <span style="font-size: 0.78rem; color: var(--text-muted);">Savitzky-Golay Denoised</span>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-heading">Incremental Capacity (dQ/dV)</span>
+            <span class="panel-meta">Savitzky-Golay Denoised</span>
           </div>
-          <div class="chart-container">
+          <div class="chart-box">
             <canvas id="icCurveChart"></canvas>
           </div>
         </div>
       </div>
 
-    </div>
+    </section>
 
     <!-- ============================================================ -->
-    <!-- TAB 3: LOBO BENCHMARK & FIGURES GALLERY                     -->
+    <!-- VIEW 3: LOBO BENCHMARK & FIGURES GALLERY                    -->
     <!-- ============================================================ -->
-    <div id="tab-benchmark" class="tab-content">
+    <section id="tab-benchmark" class="view-section">
       
       <!-- LOBO Performance Table -->
-      <div class="card">
-        <div class="card-title">
-          <span>Leave-One-Battery-Out (LOBO) 4-Fold Cross-Validation Benchmark</span>
-          <span class="badge badge-cyan">Zero Data Leakage</span>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">Leave-One-Battery-Out (LOBO) 4-Fold Cross-Validation</span>
+          <span class="panel-meta">Zero Data Leakage Validation</span>
         </div>
         
-        <div class="data-table-container">
-          <table class="data-table">
+        <div class="table-wrapper">
+          <table class="instrument-table">
             <thead>
               <tr>
-                <th>Model</th>
+                <th>Model Architecture</th>
                 <th>Mean RMSE (%)</th>
                 <th>Mean MAE (%)</th>
                 <th>Mean R²</th>
                 <th>Max Error (%)</th>
-                <th>Electrochemical Characteristics</th>
+                <th>Properties</th>
               </tr>
             </thead>
             <tbody id="loboTableBody">
               <tr>
-                <td><strong>Ridge</strong></td>
-                <td style="color: var(--accent-green); font-weight: 600;">1.922 ± 0.622</td>
+                <td><strong>Ridge Regression</strong></td>
+                <td style="color: var(--status-nominal); font-weight: 600;">1.922 ± 0.622</td>
                 <td>1.530 ± 0.558</td>
                 <td>0.9560</td>
                 <td>3.85%</td>
                 <td>Closed-form linear weights; exact physical Jacobian ∂SoH / ∂x<sub>i</sub></td>
               </tr>
               <tr>
-                <td><strong>ElasticNet</strong></td>
+                <td><strong>ElasticNet Baseline</strong></td>
                 <td>2.295 ± 1.180</td>
                 <td>1.944 ± 1.164</td>
                 <td>0.9384</td>
@@ -329,7 +380,7 @@
                 <td>95% epistemic confidence intervals (±1.96σ), 90.6% empirical coverage</td>
               </tr>
               <tr>
-                <td><strong>XGBoost</strong></td>
+                <td><strong>XGBoost Ensemble</strong></td>
                 <td>2.784 ± 1.261</td>
                 <td>2.359 ± 1.104</td>
                 <td>0.9131</td>
@@ -337,7 +388,7 @@
                 <td>Non-linear feature interactions with TreeSHAP attributions</td>
               </tr>
               <tr>
-                <td><strong>SVR (RBF Kernel)</strong></td>
+                <td><strong>Support Vector (SVR)</strong></td>
                 <td>4.380 ± 3.152</td>
                 <td>3.357 ± 2.287</td>
                 <td>0.7609</td>
@@ -349,39 +400,45 @@
         </div>
       </div>
 
-      <!-- High-DPI Publication Figures Lightroom Grid -->
-      <div class="card">
-        <div class="card-title">
-          <span>High-Resolution Publication Diagnostics & Theoretical Proofs</span>
-          <span style="font-size: 0.78rem; color: var(--text-muted);">Outputs in outputs/figures/ (300 DPI)</span>
+      <!-- High-DPI Publication Figures Rack -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">High-Resolution Diagnostic Diagrams (300 DPI)</span>
+          <span class="panel-meta">Saved in outputs/figures/</span>
         </div>
         
-        <div class="figures-grid" id="figuresGalleryContainer">
-          <!-- Dynamically populated via /api/figures -->
+        <div class="figures-rack" id="figuresGalleryContainer">
+          <!-- Populated dynamically via /api/figures -->
         </div>
       </div>
 
-    </div>
+    </section>
 
   </main>
 
   <!-- ============================================================ -->
-  <!-- MODAL: HIGH-RESOLUTION LIGHTROOM                             -->
+  <!-- MODAL: HIGH-RESOLUTION LIGHTBOX                              -->
   <!-- ============================================================ -->
-  <div id="lightboxModal" class="modal-overlay">
-    <div class="modal-dialog">
-      <div class="modal-header">
+  <div id="lightboxModal" class="modal-backdrop">
+    <div class="modal-pane">
+      <div class="modal-title-bar">
         <div>
-          <span id="modalFigStage" class="badge badge-cyan" style="margin-bottom: 0.2rem; display: inline-block;">STAGE</span>
-          <h2 id="modalFigTitle" style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);">Figure Title</h2>
+          <span id="modalFigStage" class="brand-pill" style="margin-bottom: 0.2rem; display: inline-block;">STAGE</span>
+          <h2 id="modalFigTitle" style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">Figure Title</h2>
         </div>
-        <button class="modal-close-btn" id="btnCloseLightbox">&times;</button>
+        <button class="modal-close-trigger" id="btnCloseLightbox">&times;</button>
       </div>
-      <div class="modal-body">
-        <img id="modalFigImg" src="" alt="Diagnostic Figure" class="lightbox-img-full">
-        <p id="modalFigDesc" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1rem; max-width: 850px; text-align: center; line-height: 1.5;"></p>
+      <div class="modal-content-area">
+        <img id="modalFigImg" src="" alt="Diagnostic Diagram" class="lightbox-expanded-img">
+        <p id="modalFigDesc" style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 1rem; max-width: 800px; text-align: center; line-height: 1.5;"></p>
         <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
-          <a id="btnDownloadFig" href="" download class="btn-primary">⬇️ Download High-DPI Figure (300 DPI)</a>
+          <a id="btnDownloadFig" href="" download class="btn-solid">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Download 300-DPI PNG
+          </a>
         </div>
       </div>
     </div>
@@ -390,17 +447,24 @@
   <!-- ============================================================ -->
   <!-- MODAL: EXAM PROGNOSTICS REPORT EXPORT                        -->
   <!-- ============================================================ -->
-  <div id="reportModal" class="modal-overlay">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h2 style="font-size: 1.05rem; font-weight: 700; color: var(--text-main);">📄 University Exam Prognostics Diagnostic Report</h2>
+  <div id="reportModal" class="modal-backdrop">
+    <div class="modal-pane" style="max-width: 880px;">
+      <div class="modal-title-bar">
+        <h2 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary);">Prognostics Evaluation Report</h2>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <button id="btnPrintReport" class="btn-primary">🖨️ Print / Save as PDF</button>
-          <button class="modal-close-btn" id="btnCloseReport">&times;</button>
+          <button id="btnPrintReport" class="btn-solid">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print / Save as PDF
+          </button>
+          <button class="modal-close-trigger" id="btnCloseReport">&times;</button>
         </div>
       </div>
-      <div class="modal-body">
-        <div class="printable-report" id="reportContentArea">
+      <div class="modal-content-area">
+        <div class="report-paper" id="reportContentArea">
           <!-- Populated dynamically via JS -->
         </div>
       </div>

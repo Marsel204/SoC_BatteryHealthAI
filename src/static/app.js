@@ -55,23 +55,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   initCharts();
   await fetchDatasetSummary();
   await fetchFiguresCatalog();
-  // Trigger initial inference
+  // Trigger initial prediction
   triggerPredict();
-  // Load initial cycle waveforms
+  // Load initial cycle telemetry
   loadCycleData("B0005", 10);
 });
 
-// Tab Navigation
+// Segmented Navigation Switcher
 function setupTabs() {
-  const tabBtns = document.querySelectorAll(".tab-btn");
-  tabBtns.forEach((btn) => {
+  const segmentBtns = document.querySelectorAll(".segment-btn");
+  segmentBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
-      tabBtns.forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
+      segmentBtns.forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".view-section").forEach((s) => s.classList.remove("active"));
 
       btn.classList.add("active");
       const targetId = btn.getAttribute("data-tab");
-      document.getElementById(targetId).classList.add("active");
+      document.getElementById(targetId)?.classList.add("active");
     });
   });
 
@@ -88,13 +88,13 @@ function setupTabs() {
 
 // Preset Handlers
 function setupPresets() {
-  const presetBtns = document.querySelectorAll(".preset-btn");
+  const presetBtns = document.querySelectorAll(".preset-pill");
   presetBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       const presetKey = btn.getAttribute("data-preset");
       if (presets[presetKey]) {
         applyFeatures(presets[presetKey]);
-        const cleanName = btn.textContent.trim().split("(")[0].replace(/[🟢🟡🟠🔴⚡]/g, "").trim();
+        const cleanName = btn.textContent.trim().split("(")[0].trim();
         document.getElementById("activePresetLabel").textContent = `Preset: ${cleanName}`;
       }
     });
@@ -133,7 +133,7 @@ function setupSliders() {
     const slider = document.getElementById(`slider-${key}`);
     if (slider) {
       slider.addEventListener("input", (e) => {
-        document.getElementById("activePresetLabel").textContent = "Custom Inputs";
+        document.getElementById("activePresetLabel").textContent = "Custom Input";
         updateSliderLabel(key, e.target.value);
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(triggerPredict, 35);
@@ -183,19 +183,24 @@ function renderFiguresGallery(catalog) {
 
   catalog.forEach((fig) => {
     const card = document.createElement("div");
-    card.className = "figure-card";
+    card.className = "figure-entry";
     card.innerHTML = `
-      <div class="figure-thumb-wrapper" onclick="openLightbox('${fig.id}')">
-        <img src="${fig.url}" alt="${fig.title}" class="figure-thumb">
-        <div class="figure-overlay-hint">🔍 Click to Expand</div>
+      <div class="figure-preview-box" onclick="openLightbox('${fig.id}')">
+        <img src="${fig.url}" alt="${fig.title}" class="figure-preview-img">
       </div>
-      <div class="figure-body">
-        <div class="figure-tag">${fig.stage}</div>
-        <div class="figure-name">${fig.title}</div>
-        <div class="figure-desc">${fig.description}</div>
-        <div class="figure-actions">
-          <button class="btn-action" onclick="openLightbox('${fig.id}')" style="flex: 1;">🔍 Inspect</button>
-          <a href="${fig.url}" download="${fig.filename}" class="btn-primary" style="text-decoration: none; padding: 0.35rem 0.75rem;">⬇️ 300 DPI</a>
+      <div class="figure-content">
+        <div class="figure-stage-tag">${fig.stage}</div>
+        <div class="figure-title-text">${fig.title}</div>
+        <div class="figure-caption-text">${fig.description}</div>
+        <div class="figure-action-bar">
+          <button class="btn-quiet" onclick="openLightbox('${fig.id}')" style="flex: 1;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Inspect
+          </button>
+          <a href="${fig.url}" download="${fig.filename}" class="btn-solid" style="text-decoration: none; padding: 0.35rem 0.65rem; font-size: 0.74rem;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            300 DPI
+          </a>
         </div>
       </div>
     `;
@@ -225,7 +230,7 @@ function updateModelResults(data) {
   const unc = data.gpr_uncertainty || {};
   const jac = data.jacobian || {};
 
-  // Update Model Cards
+  // Update Model Values
   ["Ridge", "ElasticNet", "SVR", "GPR", "XGBoost"].forEach((m) => {
     const el = document.getElementById(`pred-${m}`);
     if (el && preds[m] !== undefined) {
@@ -233,20 +238,20 @@ function updateModelResults(data) {
     }
   });
 
-  // GPR Uncertainty & EoL Tail Probability
+  // GPR Uncertainty & Risk Metric
   if (unc.ci_lower !== undefined && unc.ci_upper !== undefined) {
     const mean = unc.mean;
     const std = unc.std;
     const halfWidth = (unc.ci_upper - unc.ci_lower) / 2.0;
-    document.getElementById("unc-GPR").textContent = `95% Epistemic CI: [${unc.ci_lower.toFixed(2)}%, ${unc.ci_upper.toFixed(2)}%] (±${halfWidth.toFixed(2)}%)`;
+    document.getElementById("unc-GPR").textContent = `95% CI: [${unc.ci_lower.toFixed(2)}%, ${unc.ci_upper.toFixed(2)}%] (±${halfWidth.toFixed(2)}%)`;
 
-    // Normal CDF: P(SoH <= 70)
+    // Normal CDF: P(SoH <= 70.0%)
     const zEol = (70.0 - mean) / (std > 0 ? std : 0.001);
     const pEol = normalCDF(zEol) * 100.0;
     const pText = pEol < 0.01 ? "< 0.01%" : pEol > 99.9 ? "> 99.9%" : `${pEol.toFixed(2)}%`;
     document.getElementById("eolProbText").textContent = `P(SoH ≤ 70.0% EoL): ${pText}`;
 
-    // Update continuous uncertainty bell curve
+    // Update continuous uncertainty distribution
     updateUncertaintyCurve(mean, std);
   }
 
@@ -273,27 +278,27 @@ function updateHealthBanner(soh) {
   const val = document.getElementById("healthSoHVal");
 
   val.textContent = `${soh.toFixed(1)}%`;
-  banner.className = "status-banner";
+  banner.className = "status-strip";
 
   if (soh > 80.0) {
-    banner.classList.add("status-optimal");
-    title.textContent = "CELL HEALTH: OPTIMAL (HEALTHY CELL)";
-    desc.textContent = "SoH comfortably exceeds 80%. Cathode/anode matrix and electrolyte are fully intact.";
+    banner.classList.add("nominal");
+    title.textContent = "CELL STATE: NOMINAL";
+    desc.textContent = "SoH comfortably exceeds 80% EoL threshold. Active matrix fully intact.";
   } else if (soh > 70.0) {
-    banner.classList.add("status-caution");
-    title.textContent = "CELL HEALTH: AGING / ACCELERATED RETENTION";
-    desc.textContent = "Approaching 70% End-of-Life (EoL). Increased internal impedance and SEI thickening observed.";
+    banner.classList.add("caution");
+    title.textContent = "CELL STATE: AGING";
+    desc.textContent = "Approaching 70% End-of-Life (EoL). Rising internal impedance observed.";
   } else {
-    banner.classList.add("status-critical");
-    title.textContent = "CELL HEALTH: CRITICAL (END-OF-LIFE REACHED)";
-    desc.textContent = "Capacity dropped below 70% (1.40 Ah nominal). Severe Loss of Active Material & Lithium Inventory.";
+    banner.classList.add("critical");
+    title.textContent = "CELL STATE: CRITICAL (EOL REACHED)";
+    desc.textContent = "Capacity dropped below 70% (1.40 Ah nominal). Severe LAM/LLI degradation.";
   }
 }
 
 // Continuous Gaussian Bell Curve Calculation
 function updateUncertaintyCurve(mean, std) {
   if (!uncertaintyChart) return;
-  const nPoints = 60;
+  const nPoints = 50;
   const spread = Math.max(3.0 * std, 4.0);
   const minX = mean - spread;
   const maxX = mean + spread;
@@ -326,11 +331,11 @@ function initCharts() {
           label: "Epistemic Density N(μ, σ²)",
           data: [],
           borderColor: "#38bdf8",
-          backgroundColor: "rgba(56, 189, 248, 0.18)",
+          backgroundColor: "rgba(56, 189, 248, 0.12)",
           fill: true,
           tension: 0.35,
           pointRadius: 0,
-          borderWidth: 2,
+          borderWidth: 1.8,
         },
       ],
     },
@@ -348,9 +353,9 @@ function initCharts() {
       },
       scales: {
         x: {
-          grid: { color: "rgba(255, 255, 255, 0.05)" },
-          ticks: { color: "#94a3b8", font: { size: 9 }, maxTicksLimit: 7 },
-          title: { display: true, text: "SoH (%)", color: "#94a3b8", font: { size: 9 } },
+          grid: { color: "rgba(255, 255, 255, 0.04)" },
+          ticks: { color: "#64748b", font: { size: 9 }, maxTicksLimit: 6 },
+          title: { display: true, text: "SoH (%)", color: "#64748b", font: { size: 9 } },
         },
         y: {
           display: false,
@@ -367,10 +372,10 @@ function initCharts() {
       labels: FEATURE_NAMES.map((k) => FEATURE_LABELS[k]),
       datasets: [
         {
-          label: "Analytical Sensitivity ∂SoH / ∂x_i",
+          label: "Sensitivity ∂SoH / ∂x_i",
           data: FEATURE_NAMES.map(() => 0),
           backgroundColor: FEATURE_NAMES.map(() => "#38bdf8"),
-          borderColor: "#263554",
+          borderColor: "#1e2433",
           borderWidth: 1,
         },
       ],
@@ -392,13 +397,13 @@ function initCharts() {
       },
       scales: {
         x: {
-          grid: { color: "rgba(255, 255, 255, 0.06)" },
-          ticks: { color: "#94a3b8", font: { size: 10 } },
-          title: { display: true, text: "Sensitivity ∂SoH / ∂x (% SoH / unit)", color: "#94a3b8", font: { size: 10 } },
+          grid: { color: "rgba(255, 255, 255, 0.04)" },
+          ticks: { color: "#64748b", font: { size: 9 } },
+          title: { display: true, text: "Analytical Sensitivity ∂SoH / ∂x (% SoH / unit)", color: "#64748b", font: { size: 9 } },
         },
         y: {
           grid: { display: false },
-          ticks: { color: "#f1f5f9", font: { size: 10 } },
+          ticks: { color: "#94a3b8", font: { size: 9 } },
         },
       },
     },
@@ -415,19 +420,21 @@ function initCharts() {
           label: "Voltage (V)",
           data: [],
           borderColor: "#38bdf8",
-          backgroundColor: "rgba(56, 189, 248, 0.1)",
+          backgroundColor: "rgba(56, 189, 248, 0.08)",
           yAxisID: "yV",
           tension: 0.1,
           pointRadius: 0,
+          borderWidth: 1.5,
         },
         {
           label: "Current (A)",
           data: [],
           borderColor: "#f59e0b",
-          borderDash: [5, 5],
+          borderDash: [4, 4],
           yAxisID: "yI",
           tension: 0.1,
           pointRadius: 0,
+          borderWidth: 1.5,
         },
       ],
     },
@@ -437,31 +444,31 @@ function initCharts() {
       interaction: { mode: "index", intersect: false },
       scales: {
         x: {
-          title: { display: true, text: "Charging Time (s)", color: "#94a3b8", font: { size: 10 } },
-          grid: { color: "rgba(255, 255, 255, 0.05)" },
-          ticks: { color: "#94a3b8", font: { size: 10 } },
+          title: { display: true, text: "Charging Duration (s)", color: "#64748b", font: { size: 9 } },
+          grid: { color: "rgba(255, 255, 255, 0.04)" },
+          ticks: { color: "#64748b", font: { size: 9 } },
         },
         yV: {
           type: "linear",
           position: "left",
-          title: { display: true, text: "Voltage (V)", color: "#38bdf8", font: { size: 10 } },
-          grid: { color: "rgba(255, 255, 255, 0.05)" },
-          ticks: { color: "#38bdf8", font: { size: 10 } },
+          title: { display: true, text: "Voltage (V)", color: "#38bdf8", font: { size: 9 } },
+          grid: { color: "rgba(255, 255, 255, 0.04)" },
+          ticks: { color: "#38bdf8", font: { size: 9 } },
           min: 3.6,
           max: 4.3,
         },
         yI: {
           type: "linear",
           position: "right",
-          title: { display: true, text: "Current (A)", color: "#f59e0b", font: { size: 10 } },
+          title: { display: true, text: "Current (A)", color: "#f59e0b", font: { size: 9 } },
           grid: { drawOnChartArea: false },
-          ticks: { color: "#f59e0b", font: { size: 10 } },
+          ticks: { color: "#f59e0b", font: { size: 9 } },
           min: -0.1,
           max: 1.8,
         },
       },
       plugins: {
-        legend: { labels: { color: "#f8fafc", font: { size: 11 } } },
+        legend: { labels: { color: "#94a3b8", font: { size: 10 } } },
       },
     },
   });
@@ -477,10 +484,11 @@ function initCharts() {
           label: "dQ/dV (Ah/V)",
           data: [],
           borderColor: "#10b981",
-          backgroundColor: "rgba(16, 185, 129, 0.1)",
+          backgroundColor: "rgba(16, 185, 129, 0.08)",
           fill: true,
           tension: 0.2,
           pointRadius: 0,
+          borderWidth: 1.5,
         },
       ],
     },
@@ -489,19 +497,19 @@ function initCharts() {
       maintainAspectRatio: false,
       scales: {
         x: {
-          title: { display: true, text: "Voltage (V)", color: "#94a3b8", font: { size: 10 } },
-          grid: { color: "rgba(255, 255, 255, 0.05)" },
-          ticks: { color: "#94a3b8", font: { size: 10 } },
+          title: { display: true, text: "Terminal Voltage (V)", color: "#64748b", font: { size: 9 } },
+          grid: { color: "rgba(255, 255, 255, 0.04)" },
+          ticks: { color: "#64748b", font: { size: 9 } },
         },
         y: {
-          title: { display: true, text: "Incremental Capacity dQ/dV (Ah/V)", color: "#10b981", font: { size: 10 } },
-          grid: { color: "rgba(255, 255, 255, 0.05)" },
-          ticks: { color: "#10b981", font: { size: 10 } },
+          title: { display: true, text: "Incremental Capacity dQ/dV (Ah/V)", color: "#10b981", font: { size: 9 } },
+          grid: { color: "rgba(255, 255, 255, 0.04)" },
+          ticks: { color: "#10b981", font: { size: 9 } },
           min: 0,
         },
       },
       plugins: {
-        legend: { labels: { color: "#f8fafc", font: { size: 11 } } },
+        legend: { labels: { color: "#94a3b8", font: { size: 10 } } },
       },
     },
   });
@@ -510,7 +518,7 @@ function initCharts() {
 function updateJacobianChart(jac) {
   if (!jacobianChart) return;
   const values = FEATURE_NAMES.map((k) => jac[k] || 0);
-  const colors = values.map((v) => (v >= 0 ? "rgba(16, 185, 129, 0.85)" : "rgba(244, 63, 94, 0.85)"));
+  const colors = values.map((v) => (v >= 0 ? "rgba(16, 185, 129, 0.85)" : "rgba(239, 68, 68, 0.85)"));
 
   jacobianChart.data.datasets[0].data = values;
   jacobianChart.data.datasets[0].backgroundColor = colors;
@@ -543,7 +551,7 @@ function setupCycleScrubber() {
       applyFeatures(currentLoadedCycleFeatures);
       // Switch to simulator tab
       document.querySelector('[data-tab="tab-simulator"]').click();
-      document.getElementById("activePresetLabel").textContent = `Loaded from ${cellSelect.value} Cycle ${scrubber.value}`;
+      document.getElementById("activePresetLabel").textContent = `Loaded: ${cellSelect.value} Cycle ${scrubber.value}`;
     }
   });
 }
@@ -631,71 +639,71 @@ function buildExamReportContent() {
   const now = new Date().toLocaleString();
 
   container.innerHTML = `
-    <div class="report-header-print">
+    <div class="report-header-line">
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
-          <h1 style="font-size: 1.4rem; font-weight: 800; color: #38bdf8;">PHYSICS-INFORMED STATE OF HEALTH (SOH) ESTIMATION</h1>
-          <div style="font-size: 0.85rem; color: #94a3b8;">NASA PCoE Battery Dataset (18650 Li-ion Cells B0005, B0006, B0007, B0018)</div>
+          <h1 style="font-size: 1.25rem; font-weight: 700; color: #f8fafc; letter-spacing: -0.01em;">PHYSICS-INFORMED STATE OF HEALTH (SOH) EVALUATION</h1>
+          <div style="font-size: 0.8rem; color: #94a3b8;">NASA Ames Prognostics Center of Excellence — 18650 Li-ion Cells (B0005, B0006, B0007, B0018)</div>
         </div>
-        <div style="text-align: right; font-size: 0.8rem; color: #94a3b8;">
-          <div><strong>Generated:</strong> ${now}</div>
-          <div><strong>Evaluation:</strong> LOBO Cross-Validation</div>
+        <div style="text-align: right; font-size: 0.75rem; color: #94a3b8; font-family: var(--font-mono);">
+          <div>Generated: ${now}</div>
+          <div>Protocol: LOBO 4-Fold CV</div>
         </div>
       </div>
     </div>
 
-    <div class="report-section-title">1. Operational Parameters & Physical Feature Vector (x_i)</div>
-    <table class="data-table" style="margin-bottom: 1rem;">
+    <div class="report-chapter-head">1. Input Physical Feature Vector (x_i)</div>
+    <table class="instrument-table" style="margin-bottom: 1rem;">
       <thead>
         <tr>
           <th>Physical Feature</th>
-          <th>Symbol</th>
+          <th>Notation</th>
           <th>Observed Value</th>
-          <th>Electrochemical Role</th>
+          <th>Electrochemical Rationale</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>CC Charging Duration</td><td>t_cc</td><td><strong>${Math.round(currentFeatures.t_cc)} s</strong></td><td>Premature 4.2V cutoff from rising R_int</td></tr>
-        <tr><td>CV Charging Duration</td><td>t_cv</td><td><strong>${Math.round(currentFeatures.t_cv)} s</strong></td><td>Extended current decay retention phase</td></tr>
-        <tr><td>Incremental Capacity Peak</td><td>(dQ/dV)_peak</td><td><strong>${currentFeatures.dq_dv_peak.toFixed(2)} Ah/V</strong></td><td>Graphite/NMC phase transition plateau (LAM/LLI)</td></tr>
-        <tr><td>Voltage at Peak</td><td>V_peak</td><td><strong>${currentFeatures.v_at_peak.toFixed(3)} V</strong></td><td>Ohmic overpotential shift η = I · R_int</td></tr>
-        <tr><td>Max Temperature Rise</td><td>ΔT_max</td><td><strong>${currentFeatures.delta_T_max.toFixed(1)} °C</strong></td><td>Joule heat dissipation: Q_heat = ∫ I² R dt</td></tr>
-        <tr><td>Initial Ohmic Drop</td><td>ΔV_ohmic</td><td><strong>${currentFeatures.delta_V_ohmic.toFixed(3)} V</strong></td><td>Instantaneous bulk ohmic jump (R0 ≈ ΔV0 / I)</td></tr>
-        <tr><td>Electrolyte Resistance</td><td>R_e</td><td><strong>${currentFeatures.Re.toFixed(3)} Ω</strong></td><td>Bulk ionic transport resistance (EIS sweep)</td></tr>
-        <tr><td>Charge-Transfer Resistance</td><td>R_ct</td><td><strong>${currentFeatures.Rct.toFixed(3)} Ω</strong></td><td>Interfacial electrochemical kinetics & SEI film</td></tr>
-        <tr><td>Inter-Cycle Rest Duration</td><td>t_rest</td><td><strong>${currentFeatures.rest_time_hours.toFixed(1)} h</strong></td><td>Diffusion relaxation & capacity regeneration</td></tr>
+        <tr><td>Constant-Current Charge Time</td><td>t_cc</td><td><strong>${Math.round(currentFeatures.t_cc)} s</strong></td><td>Premature 4.2V cutoff from rising internal impedance R_int</td></tr>
+        <tr><td>Constant-Voltage Charge Time</td><td>t_cv</td><td><strong>${Math.round(currentFeatures.t_cv)} s</strong></td><td>Extended secondary current taper decay stage</td></tr>
+        <tr><td>Incremental Capacity Peak</td><td>(dQ/dV)_peak</td><td><strong>${currentFeatures.dq_dv_peak.toFixed(2)} Ah/V</strong></td><td>Graphite stage transition plateau retention (LAM/LLI proxy)</td></tr>
+        <tr><td>Voltage at Peak</td><td>V_peak</td><td><strong>${currentFeatures.v_at_peak.toFixed(3)} V</strong></td><td>Ohmic overpotential displacement η = I · R_int</td></tr>
+        <tr><td>Thermal Dissipation Rise</td><td>ΔT_max</td><td><strong>${currentFeatures.delta_T_max.toFixed(1)} °C</strong></td><td>Joule heating energy dissipation: Q_heat = ∫ I² R dt</td></tr>
+        <tr><td>Initial Ohmic Step</td><td>ΔV_ohmic</td><td><strong>${currentFeatures.delta_V_ohmic.toFixed(3)} V</strong></td><td>Instantaneous bulk voltage drop (R0 ≈ ΔV0 / I)</td></tr>
+        <tr><td>Bulk Electrolyte Resistance</td><td>R_e</td><td><strong>${currentFeatures.Re.toFixed(3)} Ω</strong></td><td>High-frequency EIS electrolyte ionic transport</td></tr>
+        <tr><td>Charge-Transfer Resistance</td><td>R_ct</td><td><strong>${currentFeatures.Rct.toFixed(3)} Ω</strong></td><td>Electrode/electrolyte interfacial charge-transfer barrier & SEI film</td></tr>
+        <tr><td>Inter-Cycle Rest Duration</td><td>t_rest</td><td><strong>${currentFeatures.rest_time_hours.toFixed(1)} h</strong></td><td>Solid-state lithium concentration relaxation & regeneration</td></tr>
       </tbody>
     </table>
 
-    <div class="report-section-title">2. Multi-Model Prognostic Predictions & Epistemic Uncertainty</div>
-    <table class="data-table" style="margin-bottom: 1rem;">
+    <div class="report-chapter-head">2. Multi-Model Estimation & Epistemic Uncertainty Quantification</div>
+    <table class="instrument-table" style="margin-bottom: 1rem;">
       <thead>
         <tr>
           <th>Model Architecture</th>
-          <th>Predicted SoH (%)</th>
-          <th>Uncertainty Bounds</th>
+          <th>Estimated SoH (%)</th>
+          <th>Uncertainty Interval</th>
           <th>Mathematical Formulation</th>
         </tr>
       </thead>
       <tbody>
-        <tr style="background: rgba(56, 189, 248, 0.08);">
+        <tr style="background: rgba(14, 165, 233, 0.08);">
           <td><strong>Gaussian Process (GPR)</strong></td>
-          <td><strong style="color: #38bdf8; font-size: 1.05rem;">${(preds.GPR || 0).toFixed(2)}%</strong></td>
+          <td><strong style="color: #38bdf8; font-size: 1rem;">${(preds.GPR || 0).toFixed(2)}%</strong></td>
           <td><strong>95% CI: [${(unc.ci_lower || 0).toFixed(2)}%, ${(unc.ci_upper || 0).toFixed(2)}%]</strong></td>
-          <td>Matérn 5/2 + WhiteKernel Epistemic Covariance</td>
+          <td>Matérn 5/2 + WhiteKernel Non-Parametric Covariance</td>
         </tr>
-        <tr><td>Ridge Regression</td><td>${(preds.Ridge || 0).toFixed(2)}%</td><td>Exact Closed-Form</td><td>Standardized L2 Regularization (α cross-validated)</td></tr>
+        <tr><td>Ridge Regression</td><td>${(preds.Ridge || 0).toFixed(2)}%</td><td>Closed-Form</td><td>Standardized L2 Regularization (α cross-validated)</td></tr>
         <tr><td>ElasticNet Baseline</td><td>${(preds.ElasticNet || 0).toFixed(2)}%</td><td>Sparse Penalty</td><td>Mixed L1 / L2 Coordinate Descent</td></tr>
-        <tr><td>XGBoost Ensemble</td><td>${(preds.XGBoost || 0).toFixed(2)}%</td><td>TreeSHAP Bounds</td><td>Gradient Boosted Decision Trees (Depth=3)</td></tr>
+        <tr><td>XGBoost Ensemble</td><td>${(preds.XGBoost || 0).toFixed(2)}%</td><td>TreeSHAP Attributions</td><td>Gradient Boosted Decision Trees (Depth=3)</td></tr>
         <tr><td>Support Vector Regressor (SVR)</td><td>${(preds.SVR || 0).toFixed(2)}%</td><td>Kernel Distance</td><td>Dual Space RBF Kernel mapping</td></tr>
       </tbody>
     </table>
 
-    <div class="report-section-title">3. Analytical Sensitivities (Jacobian ∂SoH / ∂x_i) & Physical Justifications</div>
-    <div style="font-size: 0.82rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 1rem;">
-      <p><strong>• Thevenin Terminal Voltage Dynamics:</strong> V_term(t) = V_OCV(SoC) + I·R_int + V_RC(t). As R_int = R_e + R_ct increases with cell aging, the 4.2V CC ceiling is hit at lower SoC*, shrinking t_cc (Jacobian: +${(jac.t_cc || 0).toFixed(4)} %/s) and expanding t_cv.</p>
-      <p><strong>• Joule Heating Law:</strong> Q_heat = ∫ I² (R_e + R_ct) dt. Irreversible heat generation scales with impedance, enforcing negative sensitivity on peak thermal rise ΔT_max (Jacobian: ${(jac.delta_T_max || 0).toFixed(4)} %/°C).</p>
-      <p><strong>• Active Material Retention:</strong> Peak height collapse of (dQ/dV)_peak directly validates Loss of Active Material (LAM) and Loss of Lithium Inventory (LLI) with positive sensitivity +${(jac.dq_dv_peak || 0).toFixed(4)} % per Ah/V.</p>
+    <div class="report-chapter-head">3. Analytical Jacobian Sensitivities (∂SoH / ∂x_i) & Physics Audit</div>
+    <div style="font-size: 0.78rem; line-height: 1.6; color: #94a3b8; margin-bottom: 0.5rem;">
+      <p><strong>• Thevenin Terminal Voltage Dynamics:</strong> V_term(t) = V_OCV(SoC) + I·R_int + V_RC(t). As R_int = R_e + R_ct increases with aging, the 4.2V CC ceiling is hit at lower SoC*, shrinking t_cc (Jacobian: +${(jac.t_cc || 0).toFixed(4)} %/s) and expanding t_cv.</p>
+      <p><strong>• Joule Heating Law:</strong> Q_heat = ∫ I² (R_e + R_ct) dt. Thermal energy generated during discharge scales proportionally with internal resistance, validating negative sensitivity on peak thermal rise ΔT_max (Jacobian: ${(jac.delta_T_max || 0).toFixed(4)} %/°C).</p>
+      <p><strong>• Phase Transition Retention:</strong> Attenuation of (dQ/dV)_peak reflects Loss of Active Material (LAM) and Loss of Lithium Inventory (LLI) with positive sensitivity +${(jac.dq_dv_peak || 0).toFixed(4)} % per Ah/V.</p>
     </div>
   `;
 }
