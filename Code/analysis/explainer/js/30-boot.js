@@ -62,17 +62,55 @@ if (railList && mobileNav) {
   }
 }
 
-/* ---- table of contents follows the reader ---- */
-const spyLinks = new Map($$('.rail nav a').map((a) => [a.getAttribute('href').slice(1), a]));
-const spy = new IntersectionObserver((entries) => {
-  for (const entry of entries) {
-    if (!entry.isIntersecting) continue;
-    spyLinks.forEach((a) => a.removeAttribute('aria-current'));
-    const link = spyLinks.get(entry.target.id);
-    if (link) link.setAttribute('aria-current', 'true');
+/* ---- three primary views, with keyboard and deep-link navigation ---- */
+const viewButtons = $$('[data-view-tab]');
+const viewPanels = $$('[data-view-panel]');
+function activateView(view, updateHash = false) {
+  if (!viewPanels.some((panel) => panel.dataset.viewPanel === view)) view = 'processing';
+  viewPanels.forEach((panel) => { panel.hidden = panel.dataset.viewPanel !== view; });
+  viewButtons.forEach((button) => {
+    const active = button.dataset.viewTab === view;
+    button.id ||= `tab-${button.dataset.viewTab}`;
+    button.setAttribute('aria-selected', String(active));
+    button.setAttribute('tabindex', active ? '0' : '-1');
+    button.setAttribute('aria-controls', button.dataset.viewTab);
+    const panel = document.getElementById(button.dataset.viewTab);
+    if (panel) panel.setAttribute('aria-labelledby', button.id);
+  });
+  $$('[data-view-link]').forEach((link) => {
+    if (link.dataset.viewLink === view) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+  figs.forEach((fig) => fig.redraw());
+  if (updateHash) {
+    try { history.replaceState(null, '', `#${view}`); } catch { location.hash = view; }
+    $('.view-tabs').scrollIntoView({block: 'start', behavior: 'instant'});
   }
-}, { rootMargin: '-25% 0px -65% 0px' });
-$$('main section[id]').forEach((sec) => spy.observe(sec));
+}
+viewButtons.forEach((button, i) => {
+  button.addEventListener('click', () => activateView(button.dataset.viewTab, true));
+  button.addEventListener('keydown', (event) => {
+    const next = event.key === 'ArrowRight' ? (i + 1) % viewButtons.length
+      : event.key === 'ArrowLeft' ? (i + viewButtons.length - 1) % viewButtons.length
+      : event.key === 'Home' ? 0 : event.key === 'End' ? viewButtons.length - 1 : null;
+    if (next === null) return;
+    event.preventDefault(); viewButtons[next].focus(); activateView(viewButtons[next].dataset.viewTab, true);
+  });
+});
+$$('[data-view-link]').forEach((link) => link.addEventListener('click', (event) => {
+  event.preventDefault(); activateView(link.dataset.viewLink, true);
+}));
+function followHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const target = document.getElementById(id);
+  const panel = target && target.closest('[data-view-panel]');
+  activateView(panel ? panel.dataset.viewPanel : 'processing');
+  if (target) {
+    for (let node = target; node; node = node.parentElement) if (node.tagName === 'DETAILS') node.open = true;
+  }
+}
+window.addEventListener('hashchange', followHash);
+followHash();
 
 /* ---- downloads ---- */
 const dl = document.getElementById('dl-csv');

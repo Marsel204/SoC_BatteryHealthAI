@@ -11,6 +11,8 @@ or [data-contract checks](data_contracts.md). Interactive pages are in
 - `clustering.json` and `data_contracts.json` contain detailed reproducible results.
 - `learning/` contains autocorrelation, mutual information, feature overlap,
   distribution coverage and time-aware uncertainty outputs.
+- `model_results.json` contains the five models' LOBO metrics and 3,160 held-out
+  predictions. Source hashes and independent metric checks guard this cache.
 - `figures/` contains the audit's PNG figures. Existing model-methodology figures
   remain in [outputs/figures](../outputs/figures/).
 - `verification.json` records scientific reconstruction and consistency checks;

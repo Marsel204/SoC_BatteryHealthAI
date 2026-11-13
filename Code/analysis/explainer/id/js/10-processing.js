@@ -76,7 +76,7 @@ figure('tape', {
     api.body.append(h('div', { class: 'legend' }, h('span', null, 'Baris atas: pengisian'), h('span', null, 'Baris tengah: pengosongan'), h('span', null, 'Baris bawah: uji impedansi'),
       ...BAT.map((b) => tick3(b, bColor(b)))));
   },
-  caption: () => `Setiap tanda adalah satu operasi dengan catatan waktu. Sel B0005 hingga B0007 mengikuti jadwal yang sama (${D.tape.B0005.first} hingga ${D.tape.B0005.last}); B0018 dijalankan kemudian (${D.tape.B0018.first} hingga ${D.tape.B0018.last}) dengan uji impedansi yang jauh lebih sedikit. Celah menandakan waktu istirahat.`,
+  caption: () => `Satu tanda per operasi; celah menunjukkan istirahat. B0005–B0007 berbagi jadwal (${D.tape.B0005.first}–${D.tape.B0005.last}); B0018 direkam kemudian (${D.tape.B0018.first}–${D.tape.B0018.last}) dengan lebih sedikit uji impedansi.`,
   table: () => tableEl(['Baterai', 'Pengisian', 'Pengosongan', 'Uji impedansi', 'Operasi pertama', 'Operasi terakhir'],
     BAT.map((b) => [b, D.tape[b].counts.charge, D.tape[b].counts.discharge, D.tape[b].counts.impedance, D.tape[b].first, D.tape[b].last]), { num: [1, 2, 3] }),
 });
@@ -136,7 +136,7 @@ figure('timeline', {
   caption() {
     const e = currentExample(), tl = e.timeline;
     const side = tl.eis_after_discharge_start ? 'setelah pengosongan ini dimulai' : tl.eis_after_charge_end ? 'setelah pengisian selesai tetapi sebelum pengosongan dimulai' : 'sebelum pengisian selesai';
-    return `<b>${e.battery}, siklus ${e.cycle}.</b>${oneCellNote()} Kapasitas terukur ${fmt(e.capacity, 3)} Ah, sehingga SoH = ${fmt(e.capacity, 3)} ÷ 2 × 100 = <b>${fmt(e.soh, 1)}%</b>. Uji impedansi terdekat dimulai ${side}; nilai hambatannya (Re ${fmt(e.re, 4)} Ω, Rct ${fmt(e.rct, 4)} Ω) menjadi Re dan Rct siklus ini.`;
+    return `<b>${e.battery}, siklus ${e.cycle}.</b>${oneCellNote()} Kapasitas ${fmt(e.capacity, 3)} Ah ÷ 2 × 100 menghasilkan SoH <b>${fmt(e.soh, 1)}%</b>. Uji terdekat dimulai ${side}: Re ${fmt(e.re, 4)} Ω, Rct ${fmt(e.rct, 4)} Ω.`;
   },
   table() {
     const e = currentExample(), tl = e.timeline;
@@ -177,7 +177,7 @@ figure('eis', {
   },
   caption() {
     const { rows } = eisCounts(S.battery), n = rows.length, late = rows.filter((r) => r[2]).length, afterCharge = rows.filter((r) => r[1]).length;
-    return `<b>${bLabel(S.battery)}:</b> pada ${fmtInt(afterCharge)} dari ${fmtInt(n)} siklus (${fmtDecimal(100 * afterCharge / n, 1)}%) uji terdekat dimulai setelah pengisian selesai, dan pada ${fmtInt(late)} (${fmtDecimal(100 * late / n, 1)}%) uji dimulai setelah pengosongan berjalan. Lebar rentang sengaja tidak seragam karena jaraknya berkisar dari menit hingga hari.`;
+    return `<b>${bLabel(S.battery)}:</b> uji terdekat setelah pengisian: ${fmtInt(afterCharge)}/${fmtInt(n)} siklus (${fmtDecimal(100 * afterCharge / n, 1)}%); setelah pengosongan dimulai: ${fmtInt(late)} (${fmtDecimal(100 * late / n, 1)}%). Rentang tak seragam mencakup menit hingga hari.`;
   },
   table() {
     const { rows, counts } = eisCounts(S.battery);
@@ -314,9 +314,9 @@ function readout(e, active) {
   return t;
 }
 const TAB_TEXT = {
-  charge: (e) => `<b>t_cc</b> adalah waktu dari sampel pertama dengan tegangan minimal 3,8 V hingga sampel pertama minimal 4,2 V. <b>t_cv</b> dihitung dari sampel pertama minimal 4,185 V hingga arus turun ke 20 mA (atau catatan berakhir). Untuk siklus ini: t_cc = <b>${fmt(e.features.t_cc, 0)} s</b>, t_cv = <b>${fmt(e.features.t_cv, 0)} s</b>. Kedua daerah berarsir sedikit bertumpang tindih karena tahap CV dihitung dari 4,185 V, sedangkan tahap CC berlangsung hingga 4,2 V.`,
-  peak: (e) => `Muatan yang masuk selama tegangan naik dari 3,8 ke 4,18 V (sampel berarus minimal 0,5 A) dijumlahkan, disampel ulang tiap 10 mV, dihaluskan, lalu diturunkan terhadap tegangan. Puncak tertinggi antara 3,85 dan 4,15 V adalah <b>dq_dv_peak</b> (${fmt(e.features.dq_dv_peak, 2)} Ah/V), dan tegangannya adalah <b>v_at_peak</b> (${fmt(e.features.v_at_peak, 3)} V).`,
-  discharge: (e) => `<b>delta_T_max</b> adalah suhu tertinggi dikurangi suhu awal (${fmt(e.features.delta_T_max, 2)} °C). <b>delta_V_ohmic</b> adalah tegangan tepat sebelum beban aktif dikurangi tegangan pada sampel pertama dengan arus minimal 1 A (${fmt(e.features.delta_V_ohmic, 3)} V).`,
+  charge: (e) => `<b>t_cc</b>: lintasan pertama 3,8→4,2 V (<b>${fmt(e.features.t_cc, 0)} s</b>). <b>t_cv</b>: mulai 4,185 V hingga 20 mA atau akhir catatan (<b>${fmt(e.features.t_cv, 0)} s</b>); kedua batas ini membuat daerah berarsir bertumpang tindih.`,
+  peak: (e) => `Jumlahkan muatan pada 3,8–4,18 V dan ≥0,5 A, sampel ulang tiap 10 mV, haluskan, lalu turunkan terhadap tegangan. Puncak tertinggi pada 3,85–4,15 V memberi <b>dq_dv_peak</b> (${fmt(e.features.dq_dv_peak, 2)} Ah/V) dan <b>v_at_peak</b> (${fmt(e.features.v_at_peak, 3)} V).`,
+  discharge: (e) => `<b>delta_T_max</b>: suhu tertinggi dikurangi suhu awal (${fmt(e.features.delta_T_max, 2)} °C). <b>delta_V_ohmic</b>: tegangan sebelum beban dikurangi sampel pertama berarus ≥1 A (${fmt(e.features.delta_V_ohmic, 3)} V).`,
 };
 figure('explorer', {
   state: { tab: 'charge' },
@@ -329,14 +329,14 @@ figure('explorer', {
     const box = h('div', { class: 'rule-box' });
     box.innerHTML = TAB_TEXT[tab](e);
     api.body.append(box);
-    if (e.flagged) api.body.append(h('div', { class: 'flagnote' }, `Ini salah satu dari ${D.tokens.n_flagged} siklus yang ditandai: catatan pengisiannya tidak memiliki kenaikan tegangan normal (sampel awal ${fmt(e.charge.first_v, 2)} V${e.charge.first_v > 5 ? ', lonjakan yang tidak masuk akal' : ''}), sehingga aturan pengisian tidak menemukan bagian yang dapat diukur. Bab 4 menjelaskan alasannya.`));
+    if (e.flagged) api.body.append(h('div', { class: 'flagnote' }, `Satu dari ${D.tokens.n_flagged} siklus bermasalah: kenaikan tegangan normal tidak ada. Sampel awal ${fmt(e.charge.first_v, 2)} V${e.charge.first_v > 5 ? ' (lonjakan tak masuk akal)' : ''}; fitur pengisian dikosongkan.`));
     const host = h('div'); api.body.append(host);
     if (tab === 'charge') drawCharge(host, e, W); else if (tab === 'peak') drawPeak(host, e, W); else drawDischarge(host, e, W);
     api.body.append(h('div', { class: 'panel-title', text: 'Sembilan nilai untuk siklus ini' }), readout(e, TAB_FEATURES[tab]));
   },
   caption() {
     const e = currentExample();
-    return `${oneCellNote()} Setiap nilai di sini dihitung ulang dari catatan mentah ${e.battery} memakai kode ekstraksi proyek dan cocok dengan tabel analisis hingga sembilan angka desimal. Kurva ditampilkan dengan sekitar 150 titik agar ringan; perhitungan memakai semua sampel (${fmtInt(e.charge.n)} pada pengisian ini, ${fmtInt(e.discharge.n)} pada pengosongan ini).`;
+    return `${oneCellNote()} Hasil dari data mentah cocok hingga sembilan angka desimal. Kurva menampilkan sekitar 150 titik; perhitungan memakai seluruh ${fmtInt(e.charge.n)} sampel pengisian dan ${fmtInt(e.discharge.n)} sampel pengosongan.`;
   },
   table() {
     const e = currentExample(), c = e.charge;
@@ -369,7 +369,7 @@ figure('dict', {
     });
     api.body.append(tableEl(['Fitur', 'Yang diukur', 'Satuan', 'Sumber', 'Rentang terukur', 'Siklus kosong', 'Diketahui saat pengisian selesai?', 'Diketahui saat pengosongan mulai?'], rows, { caption: 'Sembilan fitur', cls: 'wide' }));
   },
-  caption: () => 'Rentang menunjukkan nilai terukur terkecil dan terbesar dari keempat sel. Arahkan penunjuk ke label untuk melihat jumlah siklusnya; bab 5 menjelaskan cara menentukan status “sudah diketahui”.',
+  caption: () => 'Rentang teramati dari empat sel. Arahkan penunjuk ke label ketersediaan untuk jumlah siklus dan bukti waktunya.',
 });
 
 /* ---- 6. the five flagged cycles ---- */
@@ -389,7 +389,7 @@ figure('flagpair', {
   },
   caption() {
     const { normal, flagged } = normalNeighbour(effective(false));
-    return `${oneCellNote()} Pengisian normal bermula dari tegangan rendah lalu naik; catatan yang ditandai tidak memiliki kenaikan itu, sehingga aturan tahap CC dan puncak kurva tidak menemukan bagian yang dapat diukur. Sampel awal catatan yang ditandai menunjukkan ${fmt(flagged.charge.first_v, 2)} V${flagged.charge.first_v > 5 ? ' (lonjakan yang tidak masuk akal)' : ' (sesuai dengan pola pengisian tambahan)'}; sampel awal siklus di sebelahnya menunjukkan ${fmt(normal.charge.first_v, 2)} V.`;
+    return `${oneCellNote()} Sampel awal: catatan bermasalah ${fmt(flagged.charge.first_v, 2)} V${flagged.charge.first_v > 5 ? ' (lonjakan tak masuk akal)' : ' (sesuai pola pengisian tambahan)'}; siklus normal di sebelahnya ${fmt(normal.charge.first_v, 2)} V. Catatan bermasalah tidak memiliki kenaikan normal yang dibutuhkan aturan pengisian.`;
   },
   table() {
     const { normal, flagged } = normalNeighbour(effective(false));
@@ -427,7 +427,7 @@ figure('flags', {
   },
   caption() {
     const b = effective(false), n = D.flagged.filter((x) => x.battery === b).length;
-    return `${oneCellNote()} ${b} memiliki ${n} siklus yang ditandai. Dalam CSV sumber, nilai yang ditandai diganti dengan interpolasi dari siklus di sebelahnya (lingkaran kosong). Dalam analisis ini, baris siklus dan label kapasitas dipertahankan, tetapi fitur pengisiannya dikosongkan (arsiran).`;
+    return `${oneCellNote()} ${b}: ${n} siklus bermasalah. Lingkaran kosong: interpolasi CSV sumber; celah berarsir: analisis teramati. Baris siklus dan label kapasitas tetap dipertahankan.`;
   },
   table(api) {
     const b = effective(false), k = api.state.feature;
@@ -468,7 +468,7 @@ figure('rules', {
     api.body.append(tableEl(['Kerusakan', 'Aturan yang seharusnya gagal', 'Terdeteksi?'], D.contracts.mutation_tests.map((m) => [HUMAN(m.case), HUMAN(m.expected_failure),
       h('span', { class: `pill ${m.detected ? 'ok' : 'bad'}` }, m.detected ? '✓ terdeteksi' : '✗ terlewat')])));
   },
-  caption: () => `Seluruh ${D.tokens.n_rules} aturan umum lolos dan semua ${D.tokens.n_mutations} kerusakan yang sengaja dibuat terdeteksi. Lolos berarti tabel mengikuti aturan yang didokumentasikan; ini tidak memastikan kalibrasi sensor atau bahwa setiap fitur dapat dipakai pada waktu yang lebih awal. Arahkan penunjuk ke label untuk melihat apa yang diperiksa; tabel di bawah memuat semua pemeriksaan beserta penjelasannya.`,
+  caption: () => `${D.tokens.n_rules} aturan lolos; ${D.tokens.n_mutations} kerusakan sengaja terdeteksi. Ini memastikan aturan tabel, bukan kalibrasi sensor atau ketersediaan fitur lebih awal. Arahkan penunjuk atau buka tabel untuk rinciannya.`,
   table(api) {
     const list = D.contracts.checks.filter((x) => api.state.cat === 'all' || CAT[x.category] === api.state.cat);
     return tableEl(['Hasil', 'Pemeriksaan', 'Jenis', 'Yang diperiksa', 'Baris terkait'], list.map((x) => [x.status === 'pass' ? 'lolos' : 'peringatan', HUMAN(x.check), translateText(CAT[x.category]), translateText(x.description), x.affected_count ? fmtInt(x.affected_count) : '']), { num: [4], caption: 'Pemeriksaan kontrak data' });
@@ -482,5 +482,5 @@ figure('avail', {
     api.body.append(h('div', { class: 'legend' }, h('span', null, h('b', null, '✓ sudah diketahui'), ': terukur dari data yang sudah tersedia saat itu'), h('span', null, h('b', null, '✗ perlu data berikutnya'), ': dihitung dari data yang dicatat setelahnya'),
       h('span', null, h('b', null, '? belum dipastikan'), ': waktunya tidak dapat dipastikan dari berkas')));
   },
-  caption: () => `Hanya empat fitur pengisian yang jelas diketahui saat pengisian selesai, itu pun untuk ${D.tokens.n_complete} dari ${D.tokens.n_cycles} siklus. Waktu penggunaan model belum dipilih, sehingga kedua kemungkinan waktu ditampilkan.`,
+  caption: () => `Hanya empat fitur pengisian yang diketahui saat pengisian berakhir, untuk ${D.tokens.n_complete}/${D.tokens.n_cycles} siklus. Kedua batas waktu ditampilkan; waktu penggunaan model belum dipilih.`,
 });

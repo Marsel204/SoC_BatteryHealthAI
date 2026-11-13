@@ -19,6 +19,12 @@ Run it with the commands in [Code/README.md](../Code/README.md).
 
 ## Evaluation
 
+The offline [Models tab](../Web/HTML/index.html#models) compares all five models
+and plots measured versus held-out predictions. Its
+[saved results](../Reports/model_results.json) include every test cycle and fold.
+Refresh them with `.venv/bin/python Code/analysis/model_results.py`, or add
+`--verify-only` to validate the cache without fitting.
+
 Leave-one-battery-out evaluation trains on three batteries and evaluates on the
 fourth, repeating for all four cells. The evaluator fits its scaler on each
 training fold. The app exposes a fresh benchmark through `/api/lobo/results`;

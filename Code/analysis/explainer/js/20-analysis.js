@@ -1,6 +1,6 @@
 /* ===== part 2: analysis figures ===== */
 const fmtTick = (v) => v.toLocaleString('en-US', { maximumFractionDigits: Math.abs(v) < 1 ? 3 : Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0 });
-const oneCellNote = () => (S.battery === 'ALL' ? ` This view shows one cell at a time, so it shows ${BAT[0]}; choose another cell above.` : '');
+const oneCellNote = () => (S.battery === 'ALL' ? ` Showing ${BAT[0]}; choose a cell above.` : '');
 const sohAt = Object.fromEntries(BAT.map((b) => [b, new Map(byBat[b].map((r) => [r.cycle, r.soh]))]));
 const legendBatteries = (list) => h('div', { class: 'legend' }, list.map((b) => tick3(b, bColor(b))));
 
@@ -59,7 +59,7 @@ figure('soh', {
     api.body.append(h('div', { class: 'panel-title', text: 'The cycles that followed the longest gaps' }),
       tableEl(['Battery', 'Cycle', 'Gap before it (h)', 'Capacity change vs the previous cycle (Ah)'], D.rests.map((r) => [r.battery, r.cycle, fmt(r.rest, 1), `${r.jump >= 0 ? '+' : ''}${fmt(r.jump, 3)}`]), { num: [1, 2, 3] }));
   },
-  caption: () => `SoH is measured capacity ÷ 2 Ah × 100, from ${D.tokens.soh_min}% to ${D.tokens.soh_max}%. Each triangle marks a cycle after a long gap; capacity was higher than on the previous cycle each time (+${D.tokens.rest_jump_min.toFixed(3)} to +${D.tokens.rest_jump_max.toFixed(3)} Ah). ${D.tokens.above_100} cycles of B0006 exceed 100%: 2 Ah is a reference, not a physical ceiling, so they are kept.`,
+  caption: () => `SoH = capacity ÷ 2 Ah × 100 (${D.tokens.soh_min}–${D.tokens.soh_max}%). Triangles follow long rests (+${D.tokens.rest_jump_min.toFixed(3)}–+${D.tokens.rest_jump_max.toFixed(3)} Ah). ${D.tokens.above_100} B0006 cycles exceed 100% and are kept: 2 Ah is a reference, not a ceiling.`,
   table: () => tableEl(['Battery', 'Cycles', 'First cycle', 'Last cycle', 'Capacity range (Ah)', 'SoH range (%)'], D.summary.map((r) => [r.battery_id, r.n_cycles, r.first_cycle, r.last_cycle,
     `${fmt(r.capacity_min_ah, 3)} to ${fmt(r.capacity_max_ah, 3)}`, `${fmt(r.soh_min_percent, 1)} to ${fmt(r.soh_max_percent, 1)}`]), { num: [1, 2, 3] }),
 });
@@ -95,7 +95,7 @@ figure('scatter', {
   },
   caption() {
     const omitted = stat(S.battery, 't_cc').omitted_pairs;
-    return `<b>${bLabel(S.battery)}.</b> r is Pearson (straight-line) and ρ is Spearman (consistently rising or falling) correlation. ${omitted ? `${omitted} flagged ${omitted === 1 ? 'cycle is' : 'cycles are'} left out of the four charging panels, so their n is smaller.` : ''} The vertical axis is the same in every panel.`;
+    return `<b>${bLabel(S.battery)}.</b> Pearson r measures straight-line association; Spearman ρ uses ranks. ${omitted ? `${omitted} flagged ${omitted === 1 ? 'cycle is' : 'cycles are'} omitted from the four charging panels.` : ''} All panels share the SoH axis.`;
   },
   table() {
     return tableEl(['Feature', 'Cycles used (n)', 'Left out', 'Pearson r', 'Spearman ρ'], FEAT.map((k) => { const st = stat(S.battery, k); return [k, st.n_pairs, st.omitted_pairs, signed(st.pearson_r), signed(st.spearman_rho)]; }), { num: [1, 2, 3, 4] });
@@ -116,7 +116,7 @@ figure('rho', {
     api.body.append(h('div', { class: 'table-scroll' }, t));
     api.body.append(h('div', { class: 'legend' }, h('span', null, 'Orange: higher feature values go with lower SoH'), h('span', null, 'Blue: higher values go with higher SoH'), h('span', null, 'Paler: weaker')));
   },
-  caption: () => 'Spearman ρ of each feature with state of health (equivalently, with capacity). The outlined column follows your battery choice. Hover a cell for Pearson r and the number of cycles used.',
+  caption: () => 'Feature–SoH Spearman ρ, equivalent to correlation with capacity. The outline follows your battery choice; hover for Pearson r and the number of pairs.',
 });
 
 /* ---- 8a. trend against change ---- */
@@ -152,7 +152,7 @@ figure('levels', {
     });
     api.body.append(h('div', { class: 'legend' }, tick3('All cycles: feature against capacity', 'var(--s1)'), tick3('After removing what cycle number explains', 'var(--s3)'), tick3('Cycle-to-cycle changes', 'var(--s2)')));
   },
-  caption: () => 'A dot far from the changes marker means the strong overall association leans on the shared aging trend. “Trend removed” ranks both quantities, removes what cycle number explains linearly, and correlates the rest; it is a diagnostic, not a causal adjustment. Hover a row for the numbers and pair counts.',
+  caption: () => 'Separation from the changes marker suggests dependence on the aging trend. “Trend removed” correlates rank residuals after removing a linear cycle-number effect; this is descriptive, not causal.',
   table() {
     const list = S.battery === 'ALL' ? BAT : [effective(true)], rows = [];
     for (const b of list) for (const k of FEAT) { const d = tdiag(b, k); rows.push([b, k, signed(stat(b, k).spearman_rho), signed(d.cycle_adjusted_rank_correlation), signed(d.consecutive_change_spearman), d.n_change_pairs]); }
@@ -191,7 +191,7 @@ figure('lag', {
     });
     api.body.append(h('div', { class: 'legend' }, tick3('Levels: the measurement itself', 'var(--s1)'), tick3('Changes: cycle-to-cycle differences', 'var(--s2)')));
   },
-  caption: () => `Lag 1 compares each cycle with the next recorded one. For capacity, levels correlate ${D.tokens.lag1_level_min.toFixed(3)} to ${D.tokens.lag1_level_max.toFixed(3)} at lag 1 across the four cells, while changes correlate ${signed(D.tokens.lag1_diff_min)} to ${signed(D.tokens.lag1_diff_max)}. A lag is a number of cycles, not a number of hours.`,
+  caption: () => `Capacity at lag 1: levels ${D.tokens.lag1_level_min.toFixed(3)}–${D.tokens.lag1_level_max.toFixed(3)}; changes ${signed(D.tokens.lag1_diff_min)}–${signed(D.tokens.lag1_diff_max)} across four cells. Lag counts recorded cycles, not hours.`,
   table(api) {
     const rows = [];
     for (const b of S.battery === 'ALL' ? BAT : [effective(true)]) for (const lag of [1, 2, 3, 5, 10, 20]) {
@@ -237,7 +237,7 @@ figure('mi', {
     right.append(svg);
   },
   caption() {
-    return `${oneCellNote()} <b>Left, synthetic:</b> a U shape has no overall direction, so Spearman reads 0, yet mutual information (MI) is ${D.tokens.mi_synthetic} nats. <b>Right, measured:</b> at k = 5, t_cc has the largest MI in every cell (${D.tokens.mi_tcc_min} to ${D.tokens.mi_tcc_max} nats). Both measures favour the charging features, though their rankings differ slightly. MI is in nats, is not a percentage, and has no sign. Changing k shows how sensitive the estimate is; it is not a confidence interval.`;
+    return `${oneCellNote()} <b>Synthetic U:</b> Spearman 0, MI ${D.tokens.mi_synthetic} nats. <b>Measured, k = 5:</b> t_cc has the largest MI in each cell (${D.tokens.mi_tcc_min}–${D.tokens.mi_tcc_max} nats); Spearman rankings differ slightly. MI has no sign or percentage scale; changing k shows sensitivity, not confidence.`;
   },
   table(api) {
     const b = effective(false);
@@ -267,7 +267,7 @@ figure('vif', {
     });
     api.body.append(svg);
   },
-  caption: () => `VIF asks how well one feature can be rebuilt from the other three by a straight-line formula: 1 means not at all, larger means more overlap. Pooled VIFs are ${D.tokens.vif_v_at_peak.toFixed(1)} to ${D.tokens.vif_t_cc.toFixed(1)}, and within one cell they reach ${D.tokens.vif_cell_max.toFixed(0)}. No cut-off is applied and nothing is deleted automatically.`,
+  caption: () => `VIF: 1 means no linear overlap; larger means more. Pooled values are ${D.tokens.vif_v_at_peak.toFixed(1)}–${D.tokens.vif_t_cc.toFixed(1)}, reaching ${D.tokens.vif_cell_max.toFixed(0)} within cells. No feature is removed automatically.`,
   table() {
     return tableEl(['Feature', 'VIF', 'R² from the other three', 'Cycles used'], VIF_FEATURES.map((k) => { const r = D.feature_overlap.records.find((x) => x.battery_id === S.battery && x.feature === k); return [k, fmt(r.vif, 2), fmt(r.auxiliary_r_squared, 3), r.n_rows]; }), { num: [1, 2, 3] });
   },
@@ -293,7 +293,7 @@ figure('featmap', {
     api.body.append(svg);
     api.body.append(h('div', { class: 'legend' }, h('span', null, 'Orange: move in opposite directions'), h('span', null, 'Blue: move together'), h('span', null, 'Dark lines separate the four feature groups')));
   },
-  caption: () => 'Spearman ρ between every pair of features, on the cycles where all nine are observed. Features are ordered by similarity (average-linkage tree on 1 − |ρ|, so a strong inverse pair counts as similar), and the dark lines mark the default cut into four groups.',
+  caption: () => 'Nine-feature Spearman correlations on complete cycles. Average-linkage ordering uses 1 − |ρ|, so strong inverse pairs count as similar; dark lines mark four groups.',
   table() {
     const map = D.clusters.feature_maps[S.battery];
     return tableEl(['Feature', ...FEAT], FEAT.map((a, i) => [a, ...FEAT.map((_, j) => fmt(map.rho[i][j], 2))]), { num: FEAT.map((_, i) => i + 1) });
@@ -347,7 +347,7 @@ figure('clusters', {
         BAT.filter((b) => g.batteries[b]).map((b) => `${b} ${g.batteries[b]}`).join(' · ')]), { num: [1] }));
   },
   caption(api) {
-    return `${api.state.zoom ? `${api.state.hidden} cycles lie outside this zoomed view. ` : ''}Pooled fit on ${D.tokens.cluster_included} complete cycles. The two map axes keep ${D.tokens.cluster_var2}% of the variance; the groups are fitted on all nine standardized features, so groups that overlap on this flat map may still be apart. With three groups the silhouette (how cleanly cycles sit with their own group, from -1 to +1) is ${D.tokens.cluster_sil3}. Group numbers follow position along PC1 and are not health classes.`;
+    return `${api.state.zoom ? `${api.state.hidden} cycles outside this zoom. ` : ''}Fit: ${D.tokens.cluster_included} complete cycles, nine standardized features. The map keeps ${D.tokens.cluster_var2}% of variance and can hide separation. Three-group silhouette: ${D.tokens.cluster_sil3} (−1 to +1). Group IDs follow PC1, not health classes.`;
   },
   table(api) {
     const col = D.clusters.columns, ix = (name) => col.indexOf(name), k = api.state.k;
@@ -392,7 +392,7 @@ figure('coverage', {
     });
     api.body.append(h('div', { class: 'legend' }, h('span', null, 'Thin line: smallest to largest'), h('span', null, 'Bar: middle 80% of cycles'), h('span', null, 'Dark tick: median'), h('span', null, 'Grey band: range seen in the other three cells')));
   },
-  caption: () => 'Stages are relative thirds of each cell’s own cycles, not equal amounts of ageing. The grey band is the smallest-to-largest range seen in the other three cells; where a bar leaves it, that stretch of values has no counterpart elsewhere. Hover a bar for the counts.',
+  caption: () => 'Stages split each cell’s cycles into thirds, not equal amounts of aging. The grey band spans the other three cells’ ranges; values beyond it have no counterpart there.',
   table(api) {
     const k = api.state.measure, rows = [];
     for (const b of S.battery === 'ALL' ? BAT : [effective(true)]) { const sup = D.coverage.support.find((r) => r.battery_id === b && r.feature === k), t = D.coverage.temporal_support.find((r) => r.battery_id === b && r.feature === k); rows.push([b, `${sup.outside_count} of ${sup.n_valid}`, `${t.outside_count} of ${t.n_valid}`]); }
@@ -437,7 +437,7 @@ figure('unc', {
       tableEl(['Reason', 'Cases'], counts.map(([label, n]) => [label, n]), { num: [1] }));
     api.body.append(h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--fg)' }), 'Filled dot with line: estimate with its 95% interval'), h('span', null, h('i', { style: 'background:var(--card);border:2px solid var(--fg)' }), 'Hollow dot: estimate only, interval withheld')));
   },
-  caption: () => `Of ${D.tokens.unc_records} battery, feature and block-length cases, ${D.tokens.unc_conditional} get an exploratory interval and ${D.tokens.unc_skipped} are withheld. The interval describes the association between changes inside one cell under the resampling assumptions; it is not a prediction interval and says nothing about a new cell.`,
+  caption: () => `${D.tokens.unc_records} battery/feature/block cases: ${D.tokens.unc_conditional} exploratory intervals, ${D.tokens.unc_skipped} withheld. Intervals concern within-cell changes under resampling assumptions; they are not prediction intervals or evidence about new cells.`,
   table(api) {
     const L = Number(api.state.L), rows = [];
     for (const b of S.battery === 'ALL' ? BAT : [effective(true)]) for (const k of FEAT) { const r = unc(b, k, L); rows.push([b, k, signed(r.estimate), r.status === 'conditional' ? `${signed(r.ci_low)} to ${signed(r.ci_high)}` : 'withheld', r.n_pairs]); }
@@ -473,6 +473,6 @@ figure('bins', {
     }
     api.body.append(h('div', { class: 'legend' }, h('span', null, h('b', null, '●'), ' 5 mV grid'), h('span', null, h('b', null, '◆'), ' 20 mV grid'), h('span', null, 'Colour follows the battery')));
   },
-  caption: () => 'Rank agreement is how closely the cycle ordering from a different grid matches the 10 mV result (1 is identical). The peak height barely changes with the grid; the peak’s voltage position is more sensitive. Correlations with capacity stay strong either way.',
+  caption: () => 'Rank agreement compares cycle ordering with the 10 mV result (1 = identical). Peak height is stable; peak voltage is more sensitive. Both retain strong capacity correlations.',
   table: () => tableEl(['Battery', 'Feature', 'Grid (mV)', 'Spearman with capacity', 'Agreement with 10 mV', 'Cycles'], D.bins.map((r) => [r.battery_id, r.feature, r.bin_width_mv, signed(r.spearman_with_capacity), fmt(r.rank_agreement_with_10mv, 3), r.n_pairs]), { num: [2, 3, 4, 5] }),
 });

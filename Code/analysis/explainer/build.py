@@ -257,6 +257,14 @@ def prune(full: dict, keep: set) -> dict:
 
 def load_payload() -> tuple[dict, dict]:
     manifest = verify_pinned_source()
+    model_path = RESULTS / "model_results.json"
+    if not model_path.exists():
+        raise SystemExit("Run Code/analysis/model_results.py first to create the cached model results.")
+    model_results = json.loads(model_path.read_text())
+    assert model_results["source_sha256"] == sha256(SOURCE / "data/features_all_batteries.csv"), "model results are stale: rebuild them first"
+    assert model_results["implementation_sha256"] == sha256(REPO / "Code/app/server/models.py"), "model code changed: rebuild model results first"
+    assert model_results["validation"] == "leave-one-battery-out"
+    assert set(model_results["models"]) == {"Ridge", "ElasticNet", "SVR", "GPR", "XGBoost"}
     observed_path = RESULTS / "cycles_observed_flagged.csv"
     observed = pd.read_csv(observed_path)
     audit = pd.read_csv(RESULTS / "raw_cycle_audit.csv")
@@ -333,6 +341,7 @@ def load_payload() -> tuple[dict, dict]:
                  "observed_sha256": sha256(observed_path), "environment": environment,
                  "verification": verification},
         "batteries": BATTERIES, "features": FEATURES,
+        "model_results": model_results,
         "cycles": cycles, "flagged": flagged,
         "stats": json.loads(stats.to_json(orient="records")),
         "tape": tape,
@@ -548,7 +557,10 @@ def main():
     html = render(template, T, language)
     html = html.replace("/*__STYLE__*/", css)
     html = html.replace("/*__DATA__*/", "const DATA=" + data + ";")
-    parts = [part.read_text() for part in sorted((content_root / "js").glob("*.js"))]
+    part_paths = list((content_root / "js").glob("*.js"))
+    if language == "id":
+        part_paths.append(ROOT / "js" / "25-models.js")
+    parts = [part.read_text() for part in sorted(part_paths, key=lambda part: part.name)]
     if language == "id":
         translations = json.loads((content_root / "data-translations.json").read_text())
         assert all(c["description"] in translations and c["check"] in translations for c in payload["contracts"]["checks"]), "Missing Indonesian contract translation"

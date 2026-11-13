@@ -4,8 +4,8 @@ Open any HTML file directly in a browser:
 
 | Page | Purpose |
 |---|---|
-| [English explainer](index.html) | Raw processing through analysis, with worked cycles and interactive figures |
-| [Penjelasan Bahasa Indonesia](index-id.html) | Penjelasan lengkap, label grafik dan glosarium dalam Bahasa Indonesia |
+| [English explainer](index.html) | Three concise tabs: Processing, Analysis and Models; expand details as needed |
+| [Penjelasan Bahasa Indonesia](index-id.html) | Tiga tab ringkas: Pengolahan, Analisis dan Model; rincian dapat dibuka sesuai kebutuhan |
 | [Audit report](report.html) | Interactive exploratory report |
 | [Clustering](clustering.html) | Similar cycles, related features and sensitivity controls |
 | [Scatterplots](scatterplots.html) | Nine features against SoH, with Pearson and Spearman statistics |
