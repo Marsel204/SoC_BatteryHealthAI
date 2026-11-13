@@ -1,6 +1,6 @@
 /* ===== part 2: analysis figures ===== */
 const fmtTick = (v) => v.toLocaleString('id-ID', { maximumFractionDigits: Math.abs(v) < 1 ? 3 : Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0 });
-const oneCellNote = () => (S.battery === 'ALL' ? ` Tampilan ini menampilkan satu sel baterai, yaitu ${BAT[0]}; pilih sel lain di atas untuk menggantinya.` : '');
+const oneCellNote = () => (S.battery === 'ALL' ? ` Menampilkan ${BAT[0]}; pilih sel di atas.` : '');
 const sohAt = Object.fromEntries(BAT.map((b) => [b, new Map(byBat[b].map((r) => [r.cycle, r.soh]))]));
 const legendBatteries = (list) => h('div', { class: 'legend' }, list.map((b) => tick3(b, bColor(b))));
 
@@ -59,7 +59,7 @@ figure('soh', {
     api.body.append(h('div', { class: 'panel-title', text: 'Siklus setelah jeda terpanjang' }),
       tableEl(['Baterai', 'Siklus', 'Jeda sebelumnya (jam)', 'Perubahan kapasitas dari siklus sebelumnya (Ah)'], D.rests.map((r) => [r.battery, r.cycle, fmt(r.rest, 1), `${r.jump >= 0 ? '+' : ''}${fmt(r.jump, 3)}`]), { num: [1, 2, 3] }));
   },
-  caption: () => `SoH = kapasitas terukur ÷ 2 Ah × 100, dengan rentang ${fmt(D.tokens.soh_min, 1)}% hingga ${fmt(D.tokens.soh_max, 1)}%. Segitiga menandai siklus setelah jeda panjang; kapasitas pada setiap siklus itu lebih tinggi daripada siklus sebelumnya (+${fmt(D.tokens.rest_jump_min, 3)} hingga +${fmt(D.tokens.rest_jump_max, 3)} Ah). Ada ${D.tokens.above_100} siklus B0006 di atas 100%: 2 Ah adalah acuan, bukan batas fisik, sehingga data ini tetap disertakan.`,
+  caption: () => `SoH = kapasitas ÷ 2 Ah × 100 (${fmt(D.tokens.soh_min, 1)}–${fmt(D.tokens.soh_max, 1)}%). Segitiga mengikuti jeda panjang (+${fmt(D.tokens.rest_jump_min, 3)}–+${fmt(D.tokens.rest_jump_max, 3)} Ah). ${D.tokens.above_100} siklus B0006 melebihi 100% dan dipertahankan: 2 Ah adalah acuan, bukan batas fisik.`,
   table: () => tableEl(['Baterai', 'Siklus', 'Siklus pertama', 'Siklus terakhir', 'Rentang kapasitas (Ah)', 'Rentang SoH (%)'], D.summary.map((r) => [r.battery_id, r.n_cycles, r.first_cycle, r.last_cycle,
     `${fmt(r.capacity_min_ah, 3)} hingga ${fmt(r.capacity_max_ah, 3)}`, `${fmt(r.soh_min_percent, 1)} hingga ${fmt(r.soh_max_percent, 1)}`]), { num: [1, 2, 3] }),
 });
@@ -95,7 +95,7 @@ figure('scatter', {
   },
   caption() {
     const omitted = stat(S.battery, 't_cc').omitted_pairs;
-    return `<b>${bLabel(S.battery)}.</b> r adalah korelasi Pearson (hubungan garis lurus), sedangkan ρ adalah korelasi Spearman (kecenderungan naik atau turun secara konsisten). ${omitted ? `${omitted} siklus bermasalah tidak disertakan dalam empat panel fitur pengisian, sehingga jumlah datanya (n) lebih kecil.` : ''} Sumbu vertikal sama pada setiap panel.`;
+    return `<b>${bLabel(S.battery)}.</b> Pearson r mengukur hubungan garis lurus; Spearman ρ memakai peringkat. ${omitted ? `${omitted} siklus bermasalah dikeluarkan dari empat panel pengisian.` : ''} Semua panel memakai sumbu SoH yang sama.`;
   },
   table() {
     return tableEl(['Fitur', 'Siklus yang dipakai (n)', 'Tidak disertakan', 'Pearson r', 'Spearman ρ'], FEAT.map((k) => { const st = stat(S.battery, k); return [k, st.n_pairs, st.omitted_pairs, signed(st.pearson_r), signed(st.spearman_rho)]; }), { num: [1, 2, 3, 4] });
@@ -116,7 +116,7 @@ figure('rho', {
     api.body.append(h('div', { class: 'table-scroll' }, t));
     api.body.append(h('div', { class: 'legend' }, h('span', null, 'Oranye: nilai fitur lebih tinggi terkait SoH lebih rendah'), h('span', null, 'Biru: nilai lebih tinggi terkait SoH lebih tinggi'), h('span', null, 'Lebih pucat: hubungan lebih lemah')));
   },
-  caption: () => 'Korelasi Spearman ρ antara setiap fitur dan kesehatan baterai (setara dengan korelasi terhadap kapasitas). Kolom berbingkai mengikuti pilihan baterai. Arahkan penunjuk ke sel untuk melihat Pearson r dan jumlah siklus yang dipakai.',
+  caption: () => 'Spearman ρ fitur–SoH, setara dengan korelasi terhadap kapasitas. Bingkai mengikuti pilihan baterai; arahkan penunjuk untuk Pearson r dan jumlah pasangan data.',
 });
 
 /* ---- 8a. trend against change ---- */
@@ -152,7 +152,7 @@ figure('levels', {
     });
     api.body.append(h('div', { class: 'legend' }, tick3('Semua siklus: fitur terhadap kapasitas', 'var(--s1)'), tick3('Setelah pengaruh linear nomor siklus disisihkan', 'var(--s3)'), tick3('Perubahan antar-siklus', 'var(--s2)')));
   },
-  caption: () => 'Jika titik jauh dari penanda perubahan, hubungan keseluruhan yang kuat banyak mengikuti tren penuaan bersama. “Tren disisihkan” mengubah kedua besaran menjadi peringkat, menyisihkan bagian yang dijelaskan secara linear oleh nomor siklus, lalu menghitung korelasi sisanya. Ini pemeriksaan pola, bukan pembuktian sebab-akibat. Arahkan penunjuk ke baris untuk melihat nilai dan jumlah pasangan data.',
+  caption: () => 'Jarak dari penanda perubahan menunjukkan pengaruh tren penuaan. “Tren disisihkan” mengorelasikan sisa peringkat setelah menghapus pengaruh linear nomor siklus; ini deskriptif, bukan sebab-akibat.',
   table() {
     const list = S.battery === 'ALL' ? BAT : [effective(true)], rows = [];
     for (const b of list) for (const k of FEAT) { const d = tdiag(b, k); rows.push([b, k, signed(stat(b, k).spearman_rho), signed(d.cycle_adjusted_rank_correlation), signed(d.consecutive_change_spearman), d.n_change_pairs]); }
@@ -191,7 +191,7 @@ figure('lag', {
     });
     api.body.append(h('div', { class: 'legend' }, tick3('Nilai asli: hasil pengukurannya', 'var(--s1)'), tick3('Perubahan: selisih antar-siklus', 'var(--s2)')));
   },
-  caption: () => `Lag 1 membandingkan setiap siklus dengan siklus tercatat berikutnya. Pada kapasitas, korelasi nilai asli pada lag 1 di keempat sel berkisar ${fmt(D.tokens.lag1_level_min, 3)} hingga ${fmt(D.tokens.lag1_level_max, 3)}, sedangkan korelasi perubahannya ${signed(D.tokens.lag1_diff_min)} hingga ${signed(D.tokens.lag1_diff_max)}. Lag dihitung dalam siklus, bukan jam.`,
+  caption: () => `Kapasitas pada lag 1: nilai asli ${fmt(D.tokens.lag1_level_min, 3)}–${fmt(D.tokens.lag1_level_max, 3)}; perubahan ${signed(D.tokens.lag1_diff_min)}–${signed(D.tokens.lag1_diff_max)} di empat sel. Lag menghitung siklus tercatat, bukan jam.`,
   table(api) {
     const rows = [];
     for (const b of S.battery === 'ALL' ? BAT : [effective(true)]) for (const lag of [1, 2, 3, 5, 10, 20]) {
@@ -237,7 +237,7 @@ figure('mi', {
     right.append(svg);
   },
   caption() {
-    return `${oneCellNote()} <b>Kiri, contoh buatan:</b> bentuk U tidak memiliki satu arah keseluruhan, sehingga Spearman bernilai 0, tetapi informasi bersama (MI) sebesar ${fmt(D.tokens.mi_synthetic, 2)} nat. <b>Kanan, data terukur:</b> pada k = 5, t_cc memiliki MI terbesar di setiap sel (${fmt(D.tokens.mi_tcc_min, 2)} hingga ${fmt(D.tokens.mi_tcc_max, 2)} nat). Kedua ukuran sama-sama menonjolkan fitur pengisian, meskipun urutannya sedikit berbeda. MI bersatuan nat, bukan persentase, dan tidak memiliki tanda positif atau negatif. Mengubah k menunjukkan kepekaan estimasi; ini bukan interval kepercayaan.`;
+    return `${oneCellNote()} <b>Contoh U buatan:</b> Spearman 0, MI ${fmt(D.tokens.mi_synthetic, 2)} nat. <b>Terukur, k = 5:</b> MI t_cc tertinggi di setiap sel (${fmt(D.tokens.mi_tcc_min, 2)}–${fmt(D.tokens.mi_tcc_max, 2)} nat); urutan Spearman sedikit berbeda. MI tidak bertanda atau berskala persen; perubahan k menunjukkan kepekaan, bukan interval kepercayaan.`;
   },
   table(api) {
     const b = effective(false);
@@ -267,7 +267,7 @@ figure('vif', {
     });
     api.body.append(svg);
   },
-  caption: () => `VIF mengukur seberapa baik satu fitur dapat direkonstruksi dari tiga fitur lainnya dengan rumus garis lurus: 1 berarti tidak dapat, dan nilai lebih besar berarti lebih banyak tumpang tindih. VIF gabungan berkisar ${fmt(D.tokens.vif_v_at_peak, 1)} hingga ${fmt(D.tokens.vif_t_cc, 1)}; di dalam satu sel nilainya mencapai ${fmt(D.tokens.vif_cell_max, 0)}. Tidak ada ambang penghapusan dan tidak ada fitur yang dihapus otomatis.`,
+  caption: () => `VIF: 1 berarti tanpa tumpang tindih linear; nilai lebih besar berarti lebih banyak. Nilai gabungan ${fmt(D.tokens.vif_v_at_peak, 1)}–${fmt(D.tokens.vif_t_cc, 1)}, mencapai ${fmt(D.tokens.vif_cell_max, 0)} di dalam sel. Tidak ada fitur yang dihapus otomatis.`,
   table() {
     return tableEl(['Fitur', 'VIF', 'R² dari tiga fitur lain', 'Siklus yang dipakai'], VIF_FEATURES.map((k) => { const r = D.feature_overlap.records.find((x) => x.battery_id === S.battery && x.feature === k); return [k, fmt(r.vif, 2), fmt(r.auxiliary_r_squared, 3), r.n_rows]; }), { num: [1, 2, 3] });
   },
@@ -293,7 +293,7 @@ figure('featmap', {
     api.body.append(svg);
     api.body.append(h('div', { class: 'legend' }, h('span', null, 'Oranye: bergerak berlawanan arah'), h('span', null, 'Biru: bergerak searah'), h('span', null, 'Garis gelap memisahkan empat kelompok fitur')));
   },
-  caption: () => 'Spearman ρ antar-pasangan fitur, dihitung dari siklus dengan sembilan fitur teramati lengkap. Fitur diurutkan berdasarkan kemiripan (pohon average-linkage pada 1 − |ρ|, sehingga pasangan yang sangat berlawanan arah juga dianggap mirip). Garis gelap menandai pembagian bawaan menjadi empat kelompok.',
+  caption: () => 'Korelasi Spearman sembilan fitur pada siklus lengkap. Urutan average-linkage memakai 1 − |ρ|, sehingga pasangan berlawanan kuat tetap mirip; garis gelap menandai empat kelompok.',
   table() {
     const map = D.clusters.feature_maps[S.battery];
     return tableEl(['Fitur', ...FEAT], FEAT.map((a, i) => [a, ...FEAT.map((_, j) => fmt(map.rho[i][j], 2))]), { num: FEAT.map((_, i) => i + 1) });
@@ -347,7 +347,7 @@ figure('clusters', {
         BAT.filter((b) => g.batteries[b]).map((b) => `${b} ${g.batteries[b]}`).join(' · ')]), { num: [1] }));
   },
   caption(api) {
-    return `${api.state.zoom ? `${api.state.hidden} siklus berada di luar area pembesaran ini. ` : ''}Pengelompokan gabungan menggunakan ${D.tokens.cluster_included} siklus lengkap. Dua sumbu peta mempertahankan ${fmt(D.tokens.cluster_var2, 1)}% varians; kelompok dibentuk memakai kesembilan fitur yang telah distandardisasi. Jadi, kelompok yang bertumpuk di peta datar ini masih mungkin terpisah dalam ruang sembilan fitur. Untuk tiga kelompok, silhouette (seberapa jelas siklus berada di kelompoknya sendiri, dari -1 hingga +1) bernilai ${fmt(D.tokens.cluster_sil3, 3)}. Nomor kelompok mengikuti posisi pada PC1, bukan kelas kesehatan baterai.`;
+    return `${api.state.zoom ? `${api.state.hidden} siklus di luar pembesaran. ` : ''}Pengelompokan: ${D.tokens.cluster_included} siklus lengkap, sembilan fitur terstandar. Peta mempertahankan ${fmt(D.tokens.cluster_var2, 1)}% varians dan dapat menyembunyikan pemisahan. Silhouette tiga kelompok: ${fmt(D.tokens.cluster_sil3, 3)} (−1 hingga +1). ID mengikuti PC1, bukan kelas kesehatan.`;
   },
   table(api) {
     const col = D.clusters.columns, ix = (name) => col.indexOf(name), k = api.state.k;
@@ -392,7 +392,7 @@ figure('coverage', {
     });
     api.body.append(h('div', { class: 'legend' }, h('span', null, 'Garis tipis: terkecil hingga terbesar'), h('span', null, 'Batang: 80% siklus bagian tengah'), h('span', null, 'Garis gelap: median'), h('span', null, 'Pita abu-abu: rentang pada tiga sel lainnya')));
   },
-  caption: () => 'Tahap adalah pembagian siklus setiap sel menjadi tiga bagian, bukan tingkat penuaan yang sama. Pita abu-abu menunjukkan rentang terkecil hingga terbesar dari tiga sel lainnya. Bagian batang yang keluar dari pita menunjukkan nilai yang tidak memiliki padanan di sel lain. Arahkan penunjuk ke batang untuk melihat jumlah datanya.',
+  caption: () => 'Tahap membagi siklus setiap sel menjadi tiga, bukan tingkat penuaan yang sama. Pita abu-abu mencakup rentang tiga sel lainnya; nilai di luarnya tidak memiliki padanan di sana.',
   table(api) {
     const k = api.state.measure, rows = [];
     for (const b of S.battery === 'ALL' ? BAT : [effective(true)]) { const sup = D.coverage.support.find((r) => r.battery_id === b && r.feature === k), t = D.coverage.temporal_support.find((r) => r.battery_id === b && r.feature === k); rows.push([b, `${sup.outside_count} dari ${sup.n_valid}`, `${t.outside_count} dari ${t.n_valid}`]); }
@@ -442,7 +442,7 @@ figure('unc', {
       tableEl(['Alasan', 'Kasus'], counts.map(([label, n]) => [label, n]), { num: [1] }));
     api.body.append(h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--fg)' }), 'Titik penuh dengan garis: estimasi dan interval 95%'), h('span', null, h('i', { style: 'background:var(--card);border:2px solid var(--fg)' }), 'Titik kosong: hanya estimasi, interval tidak ditampilkan')));
   },
-  caption: () => `Dari ${D.tokens.unc_records} kombinasi baterai, fitur, dan panjang blok, ${D.tokens.unc_conditional} memiliki interval eksploratif dan ${D.tokens.unc_skipped} tidak ditampilkan. Interval menggambarkan hubungan perubahan di dalam satu sel dengan asumsi pengambilan sampel ulang. Ini bukan interval prediksi dan tidak menjelaskan perilaku sel baru.`,
+  caption: () => `${D.tokens.unc_records} kombinasi baterai/fitur/blok: ${D.tokens.unc_conditional} interval eksploratif, ${D.tokens.unc_skipped} tidak ditampilkan. Interval menjelaskan perubahan dalam satu sel dengan asumsi sampel ulang; bukan interval prediksi atau bukti tentang sel baru.`,
   table(api) {
     const L = Number(api.state.L), rows = [];
     for (const b of S.battery === 'ALL' ? BAT : [effective(true)]) for (const k of FEAT) { const r = unc(b, k, L); rows.push([b, k, signed(r.estimate), r.status === 'conditional' ? `${signed(r.ci_low)} hingga ${signed(r.ci_high)}` : 'tidak ditampilkan', r.n_pairs]); }
@@ -478,6 +478,6 @@ figure('bins', {
     }
     api.body.append(h('div', { class: 'legend' }, h('span', null, h('b', null, '●'), ' grid 5 mV'), h('span', null, h('b', null, '◆'), ' grid 20 mV'), h('span', null, 'Warna mengikuti baterai')));
   },
-  caption: () => 'Kesesuaian peringkat mengukur seberapa mirip urutan siklus dari grid berbeda dengan hasil 10 mV (1 berarti sama persis). Tinggi puncak hampir tidak berubah oleh pilihan grid, sedangkan posisi tegangan puncak lebih peka. Korelasi terhadap kapasitas tetap kuat pada kedua pilihan.',
+  caption: () => 'Kesesuaian peringkat membandingkan urutan siklus dengan hasil 10 mV (1 = identik). Tinggi puncak stabil; tegangan puncak lebih peka. Keduanya tetap berkorelasi kuat dengan kapasitas.',
   table: () => tableEl(['Baterai', 'Fitur', 'Grid (mV)', 'Spearman terhadap kapasitas', 'Kesesuaian dengan 10 mV', 'Siklus'], D.bins.map((r) => [r.battery_id, r.feature, r.bin_width_mv, signed(r.spearman_with_capacity), fmt(r.rank_agreement_with_10mv, 3), r.n_pairs]), { num: [2, 3, 4, 5] }),
 });

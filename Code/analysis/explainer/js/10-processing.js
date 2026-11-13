@@ -76,7 +76,7 @@ figure('tape', {
     api.body.append(h('div', { class: 'legend' }, h('span', null, 'Top lane: charges'), h('span', null, 'Middle lane: discharges'), h('span', null, 'Bottom lane: impedance sweeps'),
       ...BAT.map((b) => tick3(b, bColor(b)))));
   },
-  caption: () => `Each mark is one timed operation. Cells B0005 to B0007 ran on the same schedule (${D.tape.B0005.first} to ${D.tape.B0005.last}); B0018 ran later (${D.tape.B0018.first} to ${D.tape.B0018.last}) with far fewer impedance sweeps. Gaps are rest periods.`,
+  caption: () => `One mark per operation; gaps show rest. B0005–B0007 share a schedule (${D.tape.B0005.first}–${D.tape.B0005.last}); B0018 ran later (${D.tape.B0018.first}–${D.tape.B0018.last}) with fewer impedance sweeps.`,
   table: () => tableEl(['Battery', 'Charges', 'Discharges', 'Impedance sweeps', 'First operation', 'Last operation'],
     BAT.map((b) => [b, D.tape[b].counts.charge, D.tape[b].counts.discharge, D.tape[b].counts.impedance, D.tape[b].first, D.tape[b].last]), { num: [1, 2, 3] }),
 });
@@ -136,7 +136,7 @@ figure('timeline', {
   caption() {
     const e = currentExample(), tl = e.timeline;
     const side = tl.eis_after_discharge_start ? 'after this discharge has already started' : tl.eis_after_charge_end ? 'after the charge ended but before the discharge started' : 'before the charge ended';
-    return `<b>${e.battery}, cycle ${e.cycle}.</b>${oneCellNote()} Measured capacity ${fmt(e.capacity, 3)} Ah, so SoH = ${fmt(e.capacity, 3)} ÷ 2 × 100 = <b>${fmt(e.soh, 1)}%</b>. The nearest impedance sweep started ${side}; its resistances (Re ${fmt(e.re, 4)} Ω, Rct ${fmt(e.rct, 4)} Ω) become this cycle’s Re and Rct.`;
+    return `<b>${e.battery}, cycle ${e.cycle}.</b>${oneCellNote()} Capacity ${fmt(e.capacity, 3)} Ah ÷ 2 × 100 gives SoH <b>${fmt(e.soh, 1)}%</b>. The nearest sweep began ${side}: Re ${fmt(e.re, 4)} Ω, Rct ${fmt(e.rct, 4)} Ω.`;
   },
   table() {
     const e = currentExample(), tl = e.timeline;
@@ -177,7 +177,7 @@ figure('eis', {
   },
   caption() {
     const { rows } = eisCounts(S.battery), n = rows.length, late = rows.filter((r) => r[2]).length, afterCharge = rows.filter((r) => r[1]).length;
-    return `<b>${bLabel(S.battery)}:</b> for ${fmtInt(afterCharge)} of ${fmtInt(n)} cycles (${(100 * afterCharge / n).toFixed(1)}%) the nearest sweep started after the charge had ended, and for ${fmtInt(late)} (${(100 * late / n).toFixed(1)}%) it started after the discharge had begun. Bins are uneven on purpose, because the distances span minutes to days.`;
+    return `<b>${bLabel(S.battery)}:</b> nearest sweep after charge: ${fmtInt(afterCharge)}/${fmtInt(n)} cycles (${(100 * afterCharge / n).toFixed(1)}%); after discharge starts: ${fmtInt(late)} (${(100 * late / n).toFixed(1)}%). Uneven bins span minutes to days.`;
   },
   table() {
     const { rows, counts } = eisCounts(S.battery);
@@ -314,9 +314,9 @@ function readout(e, active) {
   return t;
 }
 const TAB_TEXT = {
-  charge: (e) => `<b>t_cc</b> is the time from the first sample at or above 3.8 V to the first at or above 4.2 V. <b>t_cv</b> runs from the first sample at or above 4.185 V until the current has fallen to 20 mA (or the record ends). For this cycle: t_cc = <b>${fmt(e.features.t_cc, 0)} s</b>, t_cv = <b>${fmt(e.features.t_cv, 0)} s</b>. The two shaded windows overlap briefly because the CV stage is counted from 4.185 V while the CC stage runs up to 4.2 V.`,
-  peak: (e) => `Charge added while the voltage climbs from 3.8 to 4.18 V (samples at 0.5 A or more) is totalled, re-sampled every 10 mV, smoothed, and differentiated. The tallest bump between 3.85 and 4.15 V is <b>dq_dv_peak</b> (${fmt(e.features.dq_dv_peak, 2)} Ah/V), and its voltage is <b>v_at_peak</b> (${fmt(e.features.v_at_peak, 3)} V).`,
-  discharge: (e) => `<b>delta_T_max</b> is the highest temperature minus the first (${fmt(e.features.delta_T_max, 2)} °C). <b>delta_V_ohmic</b> is the voltage just before the load switches on minus the voltage at the first sample drawing 1 A or more (${fmt(e.features.delta_V_ohmic, 3)} V).`,
+  charge: (e) => `<b>t_cc</b>: first 3.8→4.2 V crossing (<b>${fmt(e.features.t_cc, 0)} s</b>). <b>t_cv</b>: first 4.185 V crossing→20 mA, or record end (<b>${fmt(e.features.t_cv, 0)} s</b>); these thresholds make the shaded windows overlap.`,
+  peak: (e) => `Integrate charge at 3.8–4.18 V and ≥0.5 A, resample every 10 mV, smooth, then differentiate. The highest peak within 3.85–4.15 V gives <b>dq_dv_peak</b> (${fmt(e.features.dq_dv_peak, 2)} Ah/V) and <b>v_at_peak</b> (${fmt(e.features.v_at_peak, 3)} V).`,
+  discharge: (e) => `<b>delta_T_max</b>: highest minus initial temperature (${fmt(e.features.delta_T_max, 2)} °C). <b>delta_V_ohmic</b>: voltage before loading minus the first sample drawing ≥1 A (${fmt(e.features.delta_V_ohmic, 3)} V).`,
 };
 figure('explorer', {
   state: { tab: 'charge' },
@@ -329,14 +329,14 @@ figure('explorer', {
     const box = h('div', { class: 'rule-box' });
     box.innerHTML = TAB_TEXT[tab](e);
     api.body.append(box);
-    if (e.flagged) api.body.append(h('div', { class: 'flagnote' }, `This is one of the ${D.tokens.n_flagged} flagged cycles: its charge record lacks the normal voltage climb (first sample ${fmt(e.charge.first_v, 2)} V${e.charge.first_v > 5 ? ', an implausible spike' : ''}), so the charging rules find nothing to measure. Chapter 4 explains why.`));
+    if (e.flagged) api.body.append(h('div', { class: 'flagnote' }, `One of ${D.tokens.n_flagged} flagged cycles: no normal voltage climb. First sample: ${fmt(e.charge.first_v, 2)} V${e.charge.first_v > 5 ? ' (implausible spike)' : ''}; charging features are left blank.`));
     const host = h('div'); api.body.append(host);
     if (tab === 'charge') drawCharge(host, e, W); else if (tab === 'peak') drawPeak(host, e, W); else drawDischarge(host, e, W);
     api.body.append(h('div', { class: 'panel-title', text: 'The nine numbers for this cycle' }), readout(e, TAB_FEATURES[tab]));
   },
   caption() {
     const e = currentExample();
-    return `${oneCellNote()} Every value shown here was re-derived from the raw ${e.battery} recording with the project’s own extraction code, and each matches the saved analysis table to nine decimal places. Waveforms are thinned to about 150 points for the page; the numbers use every sample (${fmtInt(e.charge.n)} in this charge, ${fmtInt(e.discharge.n)} in this discharge).`;
+    return `${oneCellNote()} Raw-derived values match to nine decimal places. Curves show about 150 points; calculations use all ${fmtInt(e.charge.n)} charge and ${fmtInt(e.discharge.n)} discharge samples.`;
   },
   table() {
     const e = currentExample(), c = e.charge;
@@ -369,7 +369,7 @@ figure('dict', {
     });
     api.body.append(tableEl(['Feature', 'What it measures', 'Unit', 'Comes from', 'Observed range', 'Blank cycles', 'Known at charge end?', 'Known at discharge start?'], rows, { caption: 'The nine features', cls: 'wide' }));
   },
-  caption: () => 'Ranges are the smallest and largest observed values across all four cells. Hover a pill for the cycle counts behind it; chapter 5 explains how “known” is decided.',
+  caption: () => 'Observed ranges across four cells. Hover an availability label for cycle counts and timing evidence.',
 });
 
 /* ---- 6. the five flagged cycles ---- */
@@ -389,7 +389,7 @@ figure('flagpair', {
   },
   caption() {
     const { normal, flagged } = normalNeighbour(effective(false));
-    return `${oneCellNote()} A normal charge starts low and climbs; the flagged record lacks that climb, so the rules for the CC phase and the charge-curve peak have nothing to measure. The flagged record’s first sample reads ${fmt(flagged.charge.first_v, 2)} V${flagged.charge.first_v > 5 ? ' (an implausible spike)' : ' (consistent with a top-up)'}; the neighbouring cycle’s reads ${fmt(normal.charge.first_v, 2)} V.`;
+    return `${oneCellNote()} First sample: flagged ${fmt(flagged.charge.first_v, 2)} V${flagged.charge.first_v > 5 ? ' (implausible spike)' : ' (consistent with a top-up)'}; neighbouring normal cycle ${fmt(normal.charge.first_v, 2)} V. The flagged record lacks the normal climb needed by the charging rules.`;
   },
   table() {
     const { normal, flagged } = normalNeighbour(effective(false));
@@ -427,7 +427,7 @@ figure('flags', {
   },
   caption() {
     const b = effective(false), n = D.flagged.filter((x) => x.battery === b).length;
-    return `${oneCellNote()} ${b} has ${n} flagged ${n === 1 ? 'cycle' : 'cycles'}. In the source CSV each flagged value was replaced by interpolation between neighbouring cycles (hollow rings); in this analysis the cycle keeps its row and its capacity label, but the charging feature stays blank (shaded).`;
+    return `${oneCellNote()} ${b}: ${n} flagged ${n === 1 ? 'cycle' : 'cycles'}. Hollow rings: source-CSV interpolation; shaded gaps: observed analysis. Cycle rows and capacity labels are retained.`;
   },
   table(api) {
     const b = effective(false), k = api.state.feature;
@@ -468,7 +468,7 @@ figure('rules', {
     api.body.append(tableEl(['Corruption', 'Rule that should fail', 'Caught?'], D.contracts.mutation_tests.map((m) => [HUMAN(m.case), HUMAN(m.expected_failure),
       h('span', { class: `pill ${m.detected ? 'ok' : 'bad'}` }, m.detected ? '✓ caught' : '✗ missed')])));
   },
-  caption: () => `All ${D.tokens.n_rules} reusable rules pass, and all ${D.tokens.n_mutations} deliberate corruptions are caught. A pass certifies that the table follows its documented rules; it does not certify sensor calibration or that every feature is usable at an earlier moment. Hover a chip for what it checks; the table below lists every check with its description.`,
+  caption: () => `${D.tokens.n_rules} rules pass; ${D.tokens.n_mutations} deliberate corruptions are caught. This certifies table rules, not calibration or earlier feature availability. Hover a check or open its table for details.`,
   table(api) {
     const list = D.contracts.checks.filter((x) => api.state.cat === 'all' || CAT[x.category] === api.state.cat);
     return tableEl(['Result', 'Check', 'Kind', 'What it checks', 'Rows affected'], list.map((x) => [x.status === 'pass' ? 'pass' : 'warning', HUMAN(x.check), CAT[x.category], x.description, x.affected_count ? fmtInt(x.affected_count) : '']), { num: [4], caption: 'Data contract checks' });
@@ -482,5 +482,5 @@ figure('avail', {
     api.body.append(h('div', { class: 'legend' }, h('span', null, h('b', null, '✓ known'), ': observed from data that exists by then'), h('span', null, h('b', null, '✗ needs later data'), ': computed from something recorded afterwards'),
       h('span', null, h('b', null, '? not certified'), ': timing cannot be confirmed from the files')));
   },
-  caption: () => `Only the four charging features are cleanly known at the end of charge, and even then for ${D.tokens.n_complete} of ${D.tokens.n_cycles} cycles. No deployment moment has been chosen, so both moments are shown.`,
+  caption: () => `Only four charging features are known at charge end, for ${D.tokens.n_complete}/${D.tokens.n_cycles} cycles. Both cutoffs are shown; a deployment time has not been chosen.`,
 });

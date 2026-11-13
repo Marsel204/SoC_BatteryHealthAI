@@ -76,6 +76,30 @@ code,kbd{font-family:var(--mono);font-size:.86em;background:var(--secondary);pad
 main{max-width:1040px;margin:0 auto}
 .topbar{display:none}
 
+/* Short overview first; detailed evidence stays available on demand. */
+[hidden]{display:none!important}
+.hero{padding-top:36px}
+.hero h1{font-size:38px;max-width:none}
+.hero .lede{margin-top:12px;font-size:17px;max-width:66ch}
+.hero-facts{display:flex;flex-wrap:wrap;gap:8px 24px;margin:16px 0 10px;font-size:14px;color:var(--muted)}
+.hero-facts .num{color:var(--fg)}
+.view-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);padding:4px 0;margin:24px 0 28px;scroll-margin-top:16px}
+.view-tabs button{font:inherit;font-size:15px;font-weight:750;border:0;border-radius:8px;padding:11px 18px;background:transparent;color:var(--muted);cursor:pointer}
+.view-tabs button:hover{background:var(--secondary);color:var(--fg)}
+.view-tabs button[aria-selected=true]{background:var(--accent);color:var(--primary)}
+.view-panel>h2{font-size:25px;margin:0 0 10px}
+.view-panel>.chapter{margin-top:22px}
+details.advanced{border-top:1px solid var(--border);margin:22px 0;padding-top:15px}
+details.advanced>summary{font-weight:700;cursor:pointer;padding:5px 0;line-height:1.5}
+details.advanced .chapter{margin-top:24px}
+details.advanced .chapter-head h2{font-size:22px}
+.model-metrics,.model-legend{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:13px;margin-top:12px}
+.model-metrics{font-variant-numeric:tabular-nums;font-weight:700}
+.model-legend{color:var(--muted)}
+.model-legend span{display:flex;align-items:center;gap:8px}
+.model-legend span:before{content:'';width:24px;border-top:2px solid var(--fg)}
+.model-legend .predicted:before{border-color:var(--primary);border-top-style:dashed}
+
 /* ---------- hero ---------- */
 .hero{padding:56px 0 8px}
 .kicker{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--primary);margin:0 0 10px}
@@ -221,6 +245,7 @@ footer{margin:80px 0 0;padding-top:20px;border-top:1px solid var(--border);font-
 /* ---------- responsive ---------- */
 @media(max-width:1200px){:root{--rail-w:222px}.content{padding:0 28px 70px}h1{font-size:38px}}
 @media(max-width:940px){
+  .view-tabs{scroll-margin-top:64px}
   .shell{display:block}
   .rail{display:none}
   .topbar{display:flex;position:sticky;top:0;z-index:40;align-items:center;gap:10px;padding:10px 16px;background:var(--rail);color:var(--rail-fg)}
@@ -240,6 +265,8 @@ footer{margin:80px 0 0;padding-top:20px;border-top:1px solid var(--border);font-
   .pipeline li::after{display:none!important}
 }
 @media(max-width:640px){
+  .view-tabs{gap:0;margin-top:18px}
+  .view-tabs button{font-size:14px;padding:10px 12px;flex:1}
   .topbar strong{display:none}
   .topbar select{max-width:46vw}
   body{font-size:15.5px}

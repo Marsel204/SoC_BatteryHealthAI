@@ -4,369 +4,150 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>From raw battery files to what the data says</title>
+<title>Battery health · Processing, analysis and models</title>
 <style>/*__STYLE__*/</style>
 </head>
 <body>
-<a class="skip" href="#main">Skip to the explanation</a>
+<a class="skip" href="#main">Skip to the content</a>
 <div class="topbar">
-  <strong>Battery data, explained</strong>
+  <strong>Battery health</strong>
   <select data-battery-select aria-label="Battery shown in the charts"></select>
   <button type="button" data-theme-btn aria-label="Change colour theme">Theme: auto</button>
   <details><summary>Contents</summary><nav aria-label="Contents (mobile)"></nav></details>
 </div>
 <div class="shell">
-<aside class="rail" aria-label="Contents and controls">
-  <a class="rail-brand" href="#start">
+<aside class="rail" aria-label="Sections and controls">
+  <a class="rail-brand" href="#processing" data-view-link="processing">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="16" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
-    <span><strong>Battery data, explained</strong><span>From raw files to findings</span></span>
+    <span><strong>Battery health</strong><span>NASA battery data</span></span>
   </a>
-  <nav aria-label="Contents">
-    <ol>
-      <li><a href="#start"><span class="n"></span>Start here</a></li>
-      <li class="part-label">Part 1 · Files to a clean table</li>
-      <li><a href="#raw"><span class="n">1</span>The raw files</a></li>
-      <li><a href="#cycles"><span class="n">2</span>Pairing operations into cycles</a></li>
-      <li><a href="#features"><span class="n">3</span>Nine numbers from waveforms</a></li>
-      <li><a href="#quality"><span class="n">4</span>Five cycles that look different</a></li>
-      <li><a href="#contracts"><span class="n">5</span>Rules and timing</a></li>
-      <li class="part-label">Part 2 · What the table says</li>
-      <li><a href="#labels"><span class="n">6</span>The health labels</a></li>
-      <li><a href="#relationships"><span class="n">7</span>Features against health</a></li>
-      <li><a href="#trend"><span class="n">8</span>Trend or real signal?</a></li>
-      <li><a href="#curves"><span class="n">9</span>Curved patterns</a></li>
-      <li><a href="#overlap"><span class="n">10</span>Do features repeat each other?</a></li>
-      <li><a href="#clusters"><span class="n">11</span>Natural groups of cycles</a></li>
-      <li><a href="#coverage"><span class="n">12</span>Where the data does not reach</a></li>
-      <li><a href="#uncertainty"><span class="n">13</span>How sure can we be?</a></li>
-      <li class="part-label">Part 3 · Reading it responsibly</li>
-      <li><a href="#conclusions"><span class="n">14</span>What it supports</a></li>
-      <li><a href="#appendix"><span class="n"></span>Reproduce, files, glossary</a></li>
-    </ol>
-  </nav>
+  <nav aria-label="Sections"><ol>
+    <li><a href="#processing" data-view-link="processing">Processing</a></li>
+    <li><a href="#analysis" data-view-link="analysis">Analysis</a></li>
+    <li><a href="#models" data-view-link="models">Models</a></li>
+  </ol></nav>
   <div class="rail-tools">
-    <span class="lab">Battery in the charts</span>
+    <span class="lab">Battery</span>
     <select data-battery-select aria-label="Battery shown in the charts"></select>
     <button type="button" data-theme-btn aria-label="Change colour theme">Theme: auto</button>
   </div>
 </aside>
-
 <div class="content">
 <main id="main">
-
 <header class="hero" id="start">
-  <p class="kicker">NASA battery aging data · cells B0005, B0006, B0007 and B0018</p>
-  <h1>From raw battery files to what the data says</h1>
-  <p class="lede">This page follows four lithium-ion cells from their raw recordings to {{n_cycles}} analysed cycles, then through every analysis in the project. Each number comes from a saved result file, and each chart can also be read as a table.</p>
-  <div class="kpis" role="list">
-    <div class="kpi" role="listitem"><b>{{n_batteries}}</b><span>cells</span></div>
-    <div class="kpi" role="listitem"><b>{{n_ops}}</b><span>timed operations in the raw files</span></div>
-    <div class="kpi" role="listitem"><b>{{n_cycles}}</b><span>aligned cycles, from {{n_raw_discharges}} recorded discharges</span></div>
-    <div class="kpi" role="listitem"><b>{{n_features}}</b><span>numbers measured for every cycle</span></div>
-    <div class="kpi" role="listitem"><b>{{n_flagged}}</b><span>cycles whose charging numbers are left blank</span></div>
-  </div>
-  <div class="callout">
-    <h2>Read this first</h2>
-    <ul>
-      <li><b>Exploratory.</b> All four cells have been examined, so none is an untouched test set. Nothing here shows how a new cell would behave.</li>
-      <li><b>Descriptive.</b> A correlation says how two numbers move together in these cells. It does not show cause, and it is not a measure of prediction accuracy.</li>
-      <li><b>No model.</b> This analysis fits no predictive model. The project&rsquo;s separate Model step uses the same nine features.</li>
-      <li><b>Nothing filled in.</b> Missing values stay missing: the analysis does not interpolate or impute.</li>
-    </ul>
-  </div>
-  <nav class="pipeline" aria-label="The path from raw files to findings">
-    <ol>
-      <li><a href="#raw"><span class="step">Step 1</span><strong>Raw files</strong><small>{{n_ops}} timed operations, checksummed</small></a></li>
-      <li><a href="#cycles"><span class="step">Step 2</span><strong>Cycles</strong><small>Each discharge paired with its charge and an impedance sweep</small></a></li>
-      <li><a href="#features"><span class="step">Step 3</span><strong>Nine numbers</strong><small>Plain rules applied to the waveforms</small></a></li>
-      <li><a href="#quality"><span class="step">Step 4</span><strong>Quality screen</strong><small>Five odd charge records, left blank</small></a></li>
-      <li><a href="#contracts"><span class="step">Step 5</span><strong>Rules and timing</strong><small>What passes, and what is known when</small></a></li>
-      <li><a href="#labels"><span class="step">Steps 6 to 13</span><strong>Analyses</strong><small>Eight questions asked of the table</small></a></li>
-      <li><a href="#conclusions"><span class="step">Step 14</span><strong>Reading it</strong><small>What it supports, and what it does not</small></a></li>
-    </ol>
-  </nav>
-  <p class="fig-note">How to use this page: pick a battery on the left (or at the top on a phone) and every chart that can follow it will. Hover or focus a mark for its values. Dotted words have a short definition. Open <em>View the data as a table</em> under any chart for the same numbers in text.</p>
+  <h1>Battery health</h1>
+  <p class="lede">See how the raw data becomes features, what the analysis finds, and how five models estimate health.</p>
+  <p class="hero-facts">{{n_batteries}} cells &nbsp;·&nbsp; {{n_cycles}} cycles &nbsp;·&nbsp; {{n_features}} features</p>
+  <p class="fig-note">Exploratory results from four cells. Model inputs include measurements recorded after charging ends.</p>
 </header>
+<div class="view-tabs" role="tablist" aria-label="Explore the battery data">
+  <button type="button" role="tab" id="view-tab-processing" data-view-tab="processing" aria-controls="processing" aria-selected="true">Processing</button>
+  <button type="button" role="tab" id="view-tab-analysis" data-view-tab="analysis" aria-controls="analysis" aria-selected="false" tabindex="-1">Analysis</button>
+  <button type="button" role="tab" id="view-tab-models" data-view-tab="models" aria-controls="models" aria-selected="false" tabindex="-1">Models</button>
+</div>
 
-<!-- ===================================================== PART 1 -->
-<div class="part" id="part1"><p class="kicker">Part 1</p><p class="part-title">From files to a clean table</p></div>
+<section class="view-panel" data-view-panel="processing" id="processing" role="tabpanel" aria-labelledby="view-tab-processing">
+  <h2 class="sr">Processing</h2>
+  <p class="prose">Each discharge is paired with its preceding charge and nearest <span class="term" data-term="impedance">impedance sweep</span>. Rules extract nine features; <span class="term" data-term="soh">SoH</span> = measured capacity ÷ 2 Ah × 100.</p>
+  <section id="features">
+    <fig id="explorer" title="From a waveform to nine features" sub="Choose a cycle and a step. Shading shows the samples used." />
+  </section>
+  <p class="prose"><b>Quality:</b> {{n_flagged}} cycles lack a normal charge curve. Their four charging features stay blank in the analysis. Only charging features are known at charge end.</p>
 
-<section class="chapter" id="raw" aria-labelledby="raw-h">
-  <div class="chapter-head"><p class="kicker">Step 1 · Data processing</p><h2 id="raw-h">What did we start with?</h2></div>
-  <p class="takeaway">Four recordings, {{n_ops}} timed operations, and one rule for turning them into cycles.</p>
-  <div class="prose">
-    <p>The data are NASA&rsquo;s battery aging recordings for four lithium-ion cells. Each cell&rsquo;s file is a long list of <em>operations</em> in time order. An operation is a <b>charge</b> ({{n_ops_charge}} in total), a <b>discharge</b> ({{n_ops_discharge}}) or an <span class="term" data-term="impedance">impedance sweep</span> ({{n_ops_impedance}}). Charges and discharges carry sampled voltage, current and temperature, and every operation carries a timestamp.</p>
-    <p>We never edit these files. The analysis uses a fixed copy, commit <code>{{source_commit}}</code> of the project&rsquo;s source repository, and checks every raw file&rsquo;s SHA-256 checksum before anything runs.</p>
-  </div>
-  <fig id="tape" title="Every operation in every recording" sub="Position shows the kind of operation, colour shows the battery." />
-  <div class="prose">
-    <p>B0005, B0006 and B0007 ran on one schedule: {{dis_main}} discharges and {{imp_main}} impedance sweeps each. B0018 ran later with {{dis_b0018}} discharges and only {{imp_b0018}} sweeps, which matters in the next step, because the sweeps are what supply two of the nine numbers.</p>
-    <p>The source loader then skips each cell&rsquo;s first discharge (its own note says that charge was a partial start-up charge). That leaves {{n_cycles}} of the {{n_raw_discharges}} recorded discharges, so cycle numbers start at 2.</p>
-  </div>
+  <details class="advanced"><summary>Raw files and cycle alignment</summary>
+    <section id="raw">
+      <p class="prose">The raw files contain {{n_ops}} timed operations. Skipping each cell’s first discharge leaves {{n_cycles}} aligned cycles. Source checksums are verified before processing.</p>
+      <fig id="tape" title="Raw operations" sub="Charge, discharge and impedance recordings in time order." />
+    </section>
+    <section id="cycles">
+      <fig id="timeline" title="Which operations belong to a cycle?" sub="Coloured bars are paired with this cycle; grey bars are nearby operations." />
+      <fig id="eis" title="Timing of the nearest impedance sweep" sub="A nearest sweep can be recorded later than the cycle." />
+      <p class="prose">{{eis_after_charge}} sweeps start after charging ends. Earlier starts also do not confirm completion, because sweep end times are unavailable.</p>
+    </section>
+  </details>
+  <details class="advanced"><summary>Feature definitions and extraction settings</summary>
+    <fig id="dict" title="The nine features" sub="Definitions, units, ranges and availability." notwin />
+    <fig id="bins" title="Does voltage-grid spacing change the peak?" sub="Compare 5 and 20 mV grids with the 10 mV extraction." />
+  </details>
+  <details class="advanced"><summary>Flagged cycles and data checks</summary>
+    <section id="quality">
+      <p class="prose">Three flagged records begin with implausible voltage spikes; two B0018 records resemble top-up charges. None has samples in the normal charging climb.</p>
+      <fig id="flagpair" title="Normal and flagged charge records" sub="Compare a flagged record with its neighbour." />
+      <fig id="flags" title="Observed values or filled source values" sub="Switch views to inspect the source pipeline’s interpolation." />
+      <div id="flag-table"></div>
+    </section>
+    <section id="contracts">
+      <fig id="rules" title="Data checks" sub="Rules, documented exceptions and six deliberate corruption tests." />
+      <fig id="avail" title="When is each feature known?" sub="Availability at charge end and discharge start." notwin />
+      <p class="prose">{{n_rules}} reusable rules pass. The model training table fills {{n_filled_cells}} values; the observed analysis keeps the affected measurements blank.</p>
+    </section>
+  </details>
 </section>
 
-<section class="chapter" id="cycles" aria-labelledby="cycles-h">
-  <div class="chapter-head"><p class="kicker">Step 2 · Data processing</p><h2 id="cycles-h">Which charge, discharge and impedance sweep belong together?</h2></div>
-  <p class="takeaway">Each discharge becomes one cycle. It is paired with the charge just before it and with the impedance sweep nearest in time, which is sometimes a later one.</p>
-  <div class="prose">
-    <p>A <span class="term" data-term="cycle">cycle</span> in this analysis is one discharge plus the information around it:</p>
-    <ul class="rule-list">
-      <li><span class="ic">1</span><span><b>The label.</b> The discharge&rsquo;s measured <span class="term" data-term="capacity">capacity</span> in ampere-hours. <span class="term" data-term="soh">State of health</span> is capacity &divide; 2 Ah &times; 100.</span></li>
-      <li><span class="ic">2</span><span><b>The charge.</b> The closest charge operation before the discharge.</span></li>
-      <li><span class="ic">3</span><span><b>The impedance sweep.</b> The sweep closest in time to the discharge, <em>before or after</em> it. The loader does not check which side it falls on.</span></li>
-      <li><span class="ic">4</span><span><b>The interval.</b> Hours from the end of the previous discharge to the start of this one. It includes the charge in between, so it is not pure rest.</span></li>
-    </ul>
-    <p>One edge case: cycles 89 and 90 of B0005, B0006 and B0007 share a single charge, because no charge happened between those two discharges.</p>
-  </div>
-  <fig id="timeline" title="One cycle, and what it is paired with" sub="Pick a cell and a cycle. Coloured bars belong to this cycle; grey bars are other operations nearby." />
-  <div class="prose">
-    <h3>Why the side of the sweep matters</h3>
-    <p>If you wanted to use a number at some moment, anything recorded after that moment would not exist yet. The next chart counts how far away the nearest impedance sweep is, for every cycle.</p>
-  </div>
-  <fig id="eis" title="How far away is the nearest impedance sweep?" sub="Number of cycles, by when their nearest sweep started relative to their discharge." />
-  <p class="prose">For {{eis_after_charge}} of {{n_cycles}} cycles ({{eis_after_charge_pct}}) the nearest sweep started after the charge had already ended, and for {{eis_after_discharge}} ({{eis_after_discharge_pct}}) it started after the discharge had begun. That is allowed for describing what happened, but it means Re and Rct could not be known at the end of charge. Chapter 5 returns to this.</p>
+<section class="view-panel" data-view-panel="analysis" id="analysis" role="tabpanel" aria-labelledby="view-tab-analysis" hidden>
+  <h2 class="sr">Analysis</h2>
+  <section id="labels">
+    <fig id="soh" title="Health across cycles" sub="SoH is measured capacity relative to the 2 Ah reference." />
+  </section>
+  <section id="relationships">
+    <p class="prose"><b>Main finding:</b> charge duration and the charge-curve peak track health most closely. Their information overlaps. Correlation describes association, not prediction accuracy or cause.</p>
+    <fig id="rho" title="Feature–health relationships" sub="Spearman ρ: positive means rising together; negative means opposite directions." notwin />
+    <details class="advanced"><summary>Inspect all nine scatterplots</summary>
+      <fig id="scatter" title="Features against health" sub="One point per observed cycle; flagged charging measurements are omitted." />
+    </details>
+  </section>
+  <details class="advanced"><summary>Aging trends and neighbouring cycles</summary>
+    <section id="trend">
+      <p class="prose">Nearby cycles share an aging trend. Compare original values with cycle-to-cycle changes before treating a strong association as independent information.</p>
+      <fig id="lag" title="Similarity between neighbouring cycles" sub="Compare original values and changes at different cycle gaps." />
+      <fig id="levels" title="Association with and without the trend" sub="Overall, adjusted for cycle number, and consecutive changes." />
+    </section>
+  </details>
+  <details class="advanced"><summary>Curved relationships and repeated information</summary>
+    <section id="curves">
+      <fig id="mi" title="Mutual information" sub="A synthetic curved example beside the measured results." />
+    </section>
+    <section id="overlap">
+      <fig id="vif" title="Overlap among charging features" sub="Larger VIF means more information can be reconstructed from the other features." />
+      <fig id="featmap" title="Which features move together?" sub="Pairwise Spearman correlations, ordered by similarity." />
+    </section>
+  </details>
+  <details class="advanced"><summary>Cycle groups, coverage and uncertainty</summary>
+    <section id="clusters">
+      <fig id="clusters" title="Groups of similar cycles" sub="Features determine the groups; health labels describe them afterwards." />
+      <p class="prose">Groups are not health classes. The <a href="clustering.html">full clustering report</a> includes per-cell refits.</p>
+    </section>
+    <section id="coverage">
+      <fig id="coverage" title="Coverage across cells and aging stages" sub="Ranges show where a cell’s values have no counterpart in the others." />
+    </section>
+    <section id="uncertainty">
+      <fig id="unc" title="Uncertainty in change correlations" sub="Intervals appear only where exploratory assumption checks permit them." />
+    </section>
+  </details>
 </section>
 
-<section class="chapter" id="features" aria-labelledby="features-h">
-  <div class="chapter-head"><p class="kicker">Step 3 · Data processing</p><h2 id="features-h">How do waveforms become nine numbers?</h2></div>
-  <p class="takeaway">Each number comes from a plain rule applied to a recorded curve. Nothing is learned from the data to produce them.</p>
-  <div class="prose">
-    <p>A charge or discharge is stored as hundreds to thousands of samples of voltage, current and temperature. The source repository&rsquo;s extraction code turns them into nine numbers per cycle. Below, pick a cycle and step through the rules. Every value was re-derived here from the raw recording with that same code, and each matches the saved table.</p>
-  </div>
-  <fig id="explorer" title="Waveforms to numbers, one cycle at a time" sub="The shaded or marked parts of each curve are exactly the samples the rule uses." />
-  <div class="prose">
-    <h3>All nine numbers at a glance</h3>
-    <p>This table lists what each feature measures, its range in the data, and whether its value could be known at two moments in a cycle. The last two columns are explained in chapter 5.</p>
-  </div>
-  <fig id="dict" title="The nine features" sub="One row per feature." notwin />
-  <div class="prose">
-    <h3>Does a setting of the rule change the answer?</h3>
-    <p>The charge-curve peak is found on a 10 mV voltage grid. Was that choice important? The saved audit repeats the peak with 5 mV and 20 mV grids and compares how the cycles rank.</p>
-  </div>
-  <fig id="bins" title="Peak found on different voltage grids" sub="How closely the cycle ordering matches the 10 mV result." />
+<section class="view-panel" data-view-panel="models" id="models" role="tabpanel" aria-labelledby="view-tab-models" hidden>
+  <h2 class="sr">Models</h2>
+  <p class="prose">Compare <b>Ridge, ElasticNet, SVR, GPR and XGBoost</b>. Leave-one-battery-out evaluation trains on three cells and tests on the fourth, repeated for every cell.</p>
+  <fig id="modelcompare" title="Model comparison" sub="RMSE measures prediction error in SoH percentage points; lower is better." />
+  <fig id="modelcurve" title="Predicted and measured health" sub="Choose a model and a held-out battery to inspect its predictions." />
+  <p class="prose" id="conclusions"><b>Read the scores as development estimates.</b> All four cells were explored. Some inputs need discharge or later impedance data, and the training table contains interpolated charging values. These results do not establish charge-end prediction or performance on a new cell.</p>
+  <p class="fig-note">For the live simulator, run the <a href="../../Code/app/README.md">combined app</a>. Model definitions and evaluation notes are in <a href="../../Models/README.md">Models</a>.</p>
 </section>
 
-<section class="chapter" id="quality" aria-labelledby="quality-h">
-  <div class="chapter-head"><p class="kicker">Step 4 · Data processing</p><h2 id="quality-h">Do any cycles look wrong?</h2></div>
-  <p class="takeaway">Five charge records lack the normal voltage climb. The analysis leaves their four charging numbers blank rather than filling them in.</p>
-  <div class="prose">
-    <p>A normal charge starts well below 4 V, climbs through the constant-current stage, then holds near 4.2 V while the current tapers. Five records lack that climb: B0005, B0006 and B0007 at cycle 31 contain implausible initial voltage spikes above 8 V, while B0018 at cycles 46 and 56 resemble top-up charges. Those records contain <b>no samples</b> in the 3.8 to 4.18 V climb at 0.5 A or more (a normal record has hundreds), so the rules for the CC stage and the charge-curve peak have nothing to measure.</p>
-  </div>
-  <fig id="flagpair" title="A normal charge next to a flagged one" sub="Voltage during the charge record. Shaded: the CC and CV stages the rules found." />
-  <div class="prose">
-    <h3>What the source pipeline did, and what this analysis does</h3>
-    <p>The source pipeline treats a cycle as invalid when <code>t_cc</code> is under 100 s or <code>dq_dv_peak</code> is under 0.1 Ah/V. It then replaces the charging numbers by <span class="term" data-term="interpolation">interpolation</span> between neighbouring cycles. Because of the order it tests its columns, <b>{{n_filled_cells}}</b> cells change (t_cc, t_cv and dq_dv_peak in five cycles) and the 4 V fallback for the peak voltage stays.</p>
-    <p>This analysis keeps those five rows and their capacity labels, but <span class="term" data-term="masked">leaves all four charging numbers blank</span> ({{n_masked_cells}} cells). A filled value looks measured; a blank one says nothing. Every chart states how many cycles it used.</p>
-  </div>
-  <fig id="flags" title="The same series, filled or blank" sub="One charging feature across a cell&rsquo;s cycles. Switch the view to see what the source CSV did." />
-  <div id="flag-table"></div>
-  <div class="prose">
-    <p>As a check on the whole processing path, the saved audit rebuilt the source CSV from the raw files: {{recon_columns}} columns, {{recon_mismatches}} mismatches.</p>
-  </div>
-</section>
-
-<section class="chapter" id="contracts" aria-labelledby="contracts-h">
-  <div class="chapter-head"><p class="kicker">Step 5 · Data processing</p><h2 id="contracts-h">Does the table follow its own rules, and what is known when?</h2></div>
-  <p class="takeaway">{{n_rules}} reusable rules pass, the exceptions are written down, and only the four charging features are cleanly known at the end of charge.</p>
-  <div class="prose">
-    <p>A <span class="term" data-term="contract">data contract</span> is a written list of rules the table must follow: unique cycle keys, SoH equal to capacity &divide; 2 Ah &times; 100, flagged values blank, arrays of matching length, times in increasing order, and each cycle linked to the right raw operations. A program checks them and reports exceptions instead of hiding them.</p>
-  </div>
-  <fig id="rules" title="The data contract, rule by rule" sub="Choose a kind of check. Below the chips, the checks are tested by deliberately damaging a copy." />
-  <div class="prose">
-    <h3>Exceptions that are written down</h3>
-    <ul>
-      <li>{{n_flagged}} cycles have a charge-quality flag (chapter 4).</li>
-      <li>The source CSV fills {{n_filled_cells}} feature cells that this analysis leaves out.</li>
-      <li>One unused raw charge operation (B0018, operation 114) contains six non-finite sensor samples. It is not selected for any cycle, so no cycle is affected and nothing was repaired.</li>
-      <li>SoH above 100% is accepted: B0006 has {{above_100}} such cycles. The 2 Ah figure is a reference, not a limit, and clipping would change the labels.</li>
-    </ul>
-    <h3>When is each number known?</h3>
-    <p>No prediction moment has been chosen for this project, so two are shown: when the charge ends, and when the discharge starts.</p>
-  </div>
-  <fig id="avail" title="Which features exist at each moment" sub="Hover a mark for the cycle counts behind it." notwin />
-  <div class="prose">
-    <ul>
-      <li><b>Charging features</b> are recorded by the end of charge, but only for the {{n_complete}} unflagged cycles.</li>
-      <li><b>Temperature rise</b> needs the whole discharge. <b>Voltage drop</b> needs the moment the load switches on, roughly 19 to 36 seconds into the discharge.</li>
-      <li><b>Re and Rct</b> come from the nearest sweep. {{eis_after_charge}} of those start after charging ends, and a sweep that started earlier is not certified either, because the files give no completion time.</li>
-      <li><b>The interval</b> ends when the discharge starts, so it is final only by then, and it includes charging time.</li>
-    </ul>
-  </div>
-</section>
-
-<!-- ===================================================== PART 2 -->
-<div class="part" id="part2"><p class="kicker">Part 2</p><p class="part-title">What the table says</p></div>
-<div class="prose" style="margin-top:26px"><p>From here on every chart uses the observed table: {{n_cycles}} cycles, with the {{n_flagged}} flagged cycles&rsquo; charging numbers blank. Each chart says how many cycles it used (n). Eight questions follow, each asking something different of the same table.</p></div>
-
-<section class="chapter" id="labels" aria-labelledby="labels-h">
-  <div class="chapter-head"><p class="kicker">Step 6 · Analysis</p><h2 id="labels-h">How does health change over a cell&rsquo;s life?</h2></div>
-  <p class="takeaway">SoH falls from {{soh_max}}% to {{soh_min}}% across the four cells, with jumps after long idle gaps and a few values above 100%.</p>
-  <div class="prose"><p>Before relating anything to health, look at health itself. Because SoH is exactly capacity &divide; 2 &times; 100, correlations with SoH and with capacity are identical.</p></div>
-  <fig id="soh" title="State of health against cycle number" sub="One line per cell. Hover for every cell&rsquo;s value at a cycle." />
-</section>
-
-<section class="chapter" id="relationships" aria-labelledby="relationships-h">
-  <div class="chapter-head"><p class="kicker">Step 7 · Analysis</p><h2 id="relationships-h">Which measurements move with health?</h2></div>
-  <p class="takeaway">Charging duration and the charge-curve peak track health most closely: &rho; {{rho_t_cc_min}} to {{rho_t_cc_max}} and {{rho_dq_dv_peak_min}} to {{rho_dq_dv_peak_max}} within each cell. The interval between discharges does not.</p>
-  <div class="prose">
-    <p>Two numbers summarise how a feature relates to SoH. <span class="term" data-term="spearman">Spearman &rho;</span> asks whether they consistently rise together (positive) or one falls as the other rises (negative). <span class="term" data-term="pearson">Pearson r</span> asks the same for straight-line relationships. Both run from &minus;1 to +1.</p>
-  </div>
-  <fig id="scatter" title="Each feature against state of health" sub="One dot per cycle. Hover or focus near a dot to identify it." />
-  <fig id="rho" title="Spearman &rho; by battery" sub="The same relationships as a table, for every cell and for all four together." notwin />
-  <div class="prose">
-    <h3>What to take from it</h3>
-    <ol>
-      <li><b>t_cc and dq_dv_peak are the clearest candidates for further checking.</b> Per cell, t_cc has &rho; {{rho_t_cc_min}} to {{rho_t_cc_max}} and dq_dv_peak {{rho_dq_dv_peak_min}} to {{rho_dq_dv_peak_max}}. That is an association within these cells, not evidence they would transfer.</li>
-      <li><b>Those two overlap.</b> Chapter 10 shows how much.</li>
-      <li><b>t_cv and the peak voltage rise as health falls:</b> &rho; {{rho_t_cv_min}} to {{rho_t_cv_max}} and {{rho_v_at_peak_min}} to {{rho_v_at_peak_max}} per cell. Treat that as an observed direction rather than a sign to assume in advance.</li>
-      <li><b>The interval between discharges is inconsistent:</b> &rho; {{rho_rest_time_hours_min}} to {{rho_rest_time_hours_max}}. It includes charging time, so this cannot show whether true idle rest matters.</li>
-      <li><b>Temperature rise, voltage drop and the resistances are strongly associated within cells</b> (for example temperature rise {{rho_delta_T_max_min}} to {{rho_delta_T_max_max}}), but they come from data recorded after charging ends.</li>
-    </ol>
-    <p>The pooled column is lower for several features because it mixes differences between cells with changes inside one cell.</p>
-  </div>
-</section>
-
-<section class="chapter" id="trend" aria-labelledby="trend-h">
-  <div class="chapter-head"><p class="kicker">Step 8 · Analysis</p><h2 id="trend-h">Is it the aging trend doing the work?</h2></div>
-  <p class="takeaway">Neighbouring cycles resemble each other almost perfectly, so a strong correlation partly reflects that everything drifts with age.</p>
-  <p class="analogy"><b>Think of it this way.</b> Consecutive pages of a book share context. Neighbouring cycles are also related; they are not the same as many independent batteries.</p>
-  <div class="prose"><p><span class="term" data-term="autocorr">Autocorrelation</span> compares a series with itself a few cycles later. Switching from the measurement itself to its cycle-to-cycle <em>changes</em> removes most of the shared trend.</p></div>
-  <fig id="lag" title="How much does one cycle resemble the next?" sub="Correlation between a measurement and the same measurement some cycles later." />
-  <div class="prose"><p>For capacity at lag 1, levels correlate {{lag1_level_min}} to {{lag1_level_max}}, but changes only {{lag1_diff_min}} to {{lag1_diff_max}}. The next chart does the same comparison for every feature against capacity.</p></div>
-  <fig id="levels" title="Overall association, trend removed, and changes" sub="Three correlations for each feature. A marker far from the other two means the overall number leans on the trend." />
-  <div class="prose">
-    <p>For t_cc the correlation of changes falls to {{chg_t_cc_min}} to {{chg_t_cc_max}}, and for dq_dv_peak to {{chg_dq_dv_peak_min}} to {{chg_dq_dv_peak_max}}. After removing what cycle number explains, ranks still agree: {{adj_t_cc_min}} to {{adj_t_cc_max}} for t_cc and {{adj_dq_dv_peak_min}} to {{adj_dq_dv_peak_max}} for dq_dv_peak. So part of the strong association is the shared trend, and a smaller part is a relationship that persists. These are different diagnostics, not proof of a mechanism.</p>
-  </div>
-</section>
-
-<section class="chapter" id="curves" aria-labelledby="curves-h">
-  <div class="chapter-head"><p class="kicker">Step 9 · Analysis</p><h2 id="curves-h">Could a curved pattern hide from correlation?</h2></div>
-  <p class="takeaway">Spearman sees only steadily rising or falling patterns. Mutual information can also see curves. For these data the two point the same way.</p>
-  <p class="analogy"><b>Think of it this way.</b> A U-shaped road goes downhill, then uphill. One overall direction cancels out even though the path has a clear shape.</p>
-  <div class="prose"><p><span class="term" data-term="mi">Mutual information</span> (MI) measures how much one quantity narrows down another, curved relationships included. It is in nats, has no sign, and is not a percentage.</p></div>
-  <fig id="mi" title="A curve Spearman cannot see, and what the data show" sub="Left is made-up data for teaching. Right is measured." />
-</section>
-
-<section class="chapter" id="overlap" aria-labelledby="overlap-h">
-  <div class="chapter-head"><p class="kicker">Step 10 · Analysis</p><h2 id="overlap-h">Do the features repeat each other?</h2></div>
-  <p class="takeaway">The four charging features overlap heavily, so they are not four independent clues.</p>
-  <p class="analogy"><b>Think of it this way.</b> Four witnesses who repeat each other are not four independent clues. A high overlap score warns that a straight-line formula may struggle to separate their individual contributions.</p>
-  <div class="prose"><p>The <span class="term" data-term="vif">variance inflation factor</span> (VIF) measures that overlap for the four charging features. Within a cell, t_cc and dq_dv_peak have &rho; of {{pair_tcc_dq_min}} to {{pair_tcc_dq_max}} with each other.</p></div>
-  <fig id="vif" title="Overlap among the four charging features" sub="1 means a feature adds something the other three do not; larger means more overlap." />
-  <div class="prose"><p>The next map shows all nine features, ordered so similar ones sit together.</p></div>
-  <fig id="featmap" title="Which features move together?" sub="Spearman &rho; between every pair of features." />
-  <p class="prose">A high VIF is about redundancy and unstable coefficients. It is not an instruction to delete a feature, and the analysis applies no cut-off.</p>
-</section>
-
-<section class="chapter" id="clusters" aria-labelledby="clusters-h">
-  <div class="chapter-head"><p class="kicker">Step 11 · Analysis</p><h2 id="clusters-h">Do cycles fall into natural groups?</h2></div>
-  <p class="takeaway">Three groups (an illustration, not an estimate of the true number) mostly follow age but mix cells, and one group holds only B0006.</p>
-  <div class="prose">
-    <p>Cycles are grouped on the nine standardized features only. SoH, capacity, cycle number and battery ID never decide the groups; they are used afterwards to describe them. A <span class="term" data-term="pca">principal-component</span> map squeezes nine numbers into two axes so the groups can be drawn.</p>
-  </div>
-  <fig id="clusters" title="A map of the complete cycles" sub="Each dot is a cycle. Closeness on the map means similar feature values, up to the limits of a flat map." />
-  <p class="prose">With three groups the sizes are {{cluster_sizes}}. Two of the three mix cells; the third contains only B0006. That combines changes within a cell with differences between cells, so it does not define health classes. The <a href="clustering.html">full clustering report</a> offers per-cell refits and up to six groups.</p>
-</section>
-
-<section class="chapter" id="coverage" aria-labelledby="coverage-h">
-  <div class="chapter-head"><p class="kicker">Step 12 · Analysis</p><h2 id="coverage-h">Would a new cell look like the ones we have?</h2></div>
-  <p class="takeaway">Each cell covers a different range, and late-life values often fall outside early-life ranges, so what counts as &ldquo;seen before&rdquo; depends on the stage.</p>
-  <p class="analogy"><b>Think of it this way.</b> Learning from small water tanks may leave you unprepared for a much larger one. Coverage asks which situations your observations actually include.</p>
-  <fig id="coverage" title="Value ranges by aging stage" sub="Early, middle and late thirds of each cell&rsquo;s cycles, against the range seen in the other cells." />
-  <p class="prose">A value outside another cell&rsquo;s range shows a gap in experience. It is not a measured error, and ageing can legitimately change a distribution.</p>
-</section>
-
-<section class="chapter" id="uncertainty" aria-labelledby="uncertainty-h">
-  <div class="chapter-head"><p class="kicker">Step 13 · Analysis</p><h2 id="uncertainty-h">How much could a relationship vary, and when do we refuse to say?</h2></div>
-  <p class="takeaway">Of {{unc_records}} cases, {{unc_conditional}} get an exploratory interval and {{unc_skipped}} are withheld because the assumptions look shaky.</p>
-  <p class="analogy"><b>Think of it this way.</b> Shuffling short passages instead of single words keeps some local context. A <span class="term" data-term="bootstrap">block bootstrap</span> keeps neighbouring cycles together, while still relying on assumptions.</p>
-  <div class="prose"><p>This step studies cycle-to-cycle <em>changes</em>. It re-draws short runs of neighbouring pairs many times and reports a 95% interval only if the checks pass. A withheld interval is information: it says the assumptions are doubtful for that case.</p></div>
-  <fig id="unc" title="Change correlations, with intervals where allowed" sub="One row per feature. Choose a block length to see how the answer depends on it." />
-</section>
-
-<!-- ===================================================== PART 3 -->
-<div class="part" id="part3"><p class="kicker">Part 3</p><p class="part-title">Reading it responsibly</p></div>
-
-<section class="chapter" id="conclusions" aria-labelledby="conclusions-h">
-  <div class="chapter-head"><p class="kicker">Step 14 · Reading the results</p><h2 id="conclusions-h">What can we say, and what can&rsquo;t we?</h2></div>
-  <p class="takeaway">Within these four cells some features track health closely. The analysis cannot say they would work on a new cell, or at the end of charge.</p>
-  <div class="grid-2" style="margin:22px 0;gap:18px">
-    <div class="fig" style="margin:0"><h3 class="panel-title" style="margin-top:0"><span class="pill ok">&check; Supported, descriptively</span></h3>
-      <ul>
-        <li>Charging duration and the charge-curve peak rise and fall with health in every cell.</li>
-        <li>The four charging features overlap, so they are not independent clues.</li>
-        <li>Neighbouring cycles are near-duplicates, and part of every strong association is the shared aging trend.</li>
-        <li>Five cycles need special handling, and missing values are explicit.</li>
-        <li>Several inputs depend on information recorded after charging ends.</li>
-      </ul></div>
-    <div class="fig" style="margin:0"><h3 class="panel-title" style="margin-top:0"><span class="pill warn">&cross; Not supported</span></h3>
-      <ul>
-        <li>That any feature would predict the health of a new cell. All four cells have been examined; none is held out.</li>
-        <li>That temperature rise, voltage drop, Re or Rct can be used at the end of charge.</li>
-        <li>That the interval between discharges has a consistent effect: it changes sign between cells and includes charging time.</li>
-        <li>Any statement about cause, or a universal ranking of features.</li>
-      </ul></div>
-  </div>
-  <div class="prose">
-    <h3>Before training anything</h3>
-    <ol>
-      <li>Check t_cc and dq_dv_peak against the raw waveforms (the explorer in chapter 3 is a start).</li>
-      <li>Decide how to handle the five flagged cycles, and fix the alignment of what is known when.</li>
-      <li>Define actual idle rest instead of the interval between discharges.</li>
-      <li>Obtain new validation data: a cell never used to choose features.</li>
-      <li>Keep every result described as exploratory until then.</li>
-    </ol>
-    <p>The project&rsquo;s <a href="../../Code/app/README.md">app</a> puts these views next to the source repository&rsquo;s five models, and its Model step opens with notes that carry these limits forward.</p>
-  </div>
-</section>
-
-<section class="chapter" id="appendix" aria-labelledby="appendix-h">
-  <div class="chapter-head"><p class="kicker">Appendix</p><h2 id="appendix-h">Reproduce it, trace it, look up a word</h2></div>
-  <div class="prose">
-    <h3>Reproduce</h3>
-    <p>From the project root, with the Python environment from <code>Code/app/requirements.txt</code>:</p>
-<pre class="fig" style="padding:14px 18px;overflow:auto;font-size:12.5px;line-height:1.6"><code>.venv/bin/python Code/analysis/run_eda.py
+<details class="advanced appendix" id="appendix"><summary>Sources, reproduction and glossary</summary>
+  <p class="prose">Raw data and code are pinned to commit <code>{{source_commit}}</code>. The <a href="../../Reports/README.md">saved reports</a> contain full-precision results; the <a href="../../Code/analysis/README.md">analysis guide</a> lists every rebuild command.</p>
+  <pre class="fig" style="padding:14px 18px;overflow:auto;font-size:12.5px;line-height:1.6"><code>.venv/bin/python Code/analysis/run_eda.py
 .venv/bin/python Code/analysis/validate_data.py --self-test
-.venv/bin/python Code/analysis/techniques/autocorrelation.py
-.venv/bin/python Code/analysis/techniques/mutual_information.py
-.venv/bin/python Code/analysis/techniques/feature_overlap.py --self-test
-.venv/bin/python Code/analysis/techniques/coverage.py
-.venv/bin/python Code/analysis/techniques/uncertainty.py --self-test
-.venv/bin/python Code/analysis/clustering.py --self-test
-.venv/bin/python Code/analysis/explainer/build.py</code></pre>
-    <h3>Where the numbers come from</h3>
-  </div>
-  <div class="table-scroll">
-    <table class="data files wide">
-      <thead><tr><th scope="col">Chapter</th><th scope="col">Saved files read</th></tr></thead>
-      <tbody>
-        <tr><td>1, 2</td><td><code>Reports/operations.csv</code>, <code>Reports/raw_cycle_audit.csv</code>, <code>source_manifest.json</code></td></tr>
-        <tr><td>3</td><td>The raw <code>.mat</code> files through the pinned <code>src</code> code; <code>Reports/peak_bin_sensitivity.csv</code></td></tr>
-        <tr><td>4</td><td><code>Reports/feature_changes.csv</code>, <code>Reports/cycles_raw_extracted.csv</code>, <code>Reports/csv_reconstruction_checks.csv</code></td></tr>
-        <tr><td>5</td><td><code>Reports/data_contracts.json</code></td></tr>
-        <tr><td>6, 7</td><td><code>Reports/cycles_observed_flagged.csv</code>, <code>Reports/feature_target_correlations.csv</code>, <code>Reports/battery_summary.csv</code></td></tr>
-        <tr><td>8</td><td><code>Reports/learning/autocorrelation.json</code>, <code>Reports/temporal_diagnostics.csv</code></td></tr>
-        <tr><td>9</td><td><code>Reports/learning/mutual_information.json</code></td></tr>
-        <tr><td>10</td><td><code>Reports/learning/feature_overlap.json</code>, <code>Reports/clustering.json</code></td></tr>
-        <tr><td>11</td><td><code>Reports/cycle_clusters.csv</code>, <code>Reports/clustering.json</code></td></tr>
-        <tr><td>12</td><td><code>Reports/learning/coverage.json</code></td></tr>
-        <tr><td>13</td><td><code>Reports/learning/uncertainty.json</code></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="prose">
-    <h3>Versions and checksums</h3>
-    <ul id="versions"></ul>
-    <p><button type="button" class="btn" id="dl-csv">Download the observed table (CSV)</button> <span class="fig-note">All {{n_cycles}} rows; blank cells are missing values; numbers are rounded to six decimals.</span></p>
-    <h3>Glossary</h3>
-  </div>
+.venv/bin/python Code/analysis/model_results.py
+.venv/bin/python Code/analysis/explainer/build.py
+.venv/bin/python Code/analysis/explainer/build.py --lang id</code></pre>
+  <ul id="versions"></ul>
+  <p><button type="button" class="btn" id="dl-csv">Download observed data (CSV)</button> <span class="fig-note">{{n_cycles}} rows; missing observations stay blank.</span></p>
   <div id="glossary"></div>
-</section>
-
+</details>
 </main>
-<footer>
-  Built by <code>Code/analysis/explainer/build.py</code> from saved results and the pinned raw data. This page is one file and makes no network requests. It describes four cells exploratorily; it is not a validation of any model.
-</footer>
+<footer>One offline file, built from the pinned data and saved results.</footer>
 </div>
 </div>
 <div id="tip" role="tooltip" hidden></div>

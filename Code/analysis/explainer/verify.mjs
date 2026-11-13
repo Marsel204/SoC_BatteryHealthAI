@@ -24,6 +24,15 @@ page.on('pageerror', e => errors.push(String(e)));
 page.on('console', m => { if (['warning', 'error'].includes(m.type())) errors.push(`${m.type()}: ${m.text()}`); });
 page.on('request', r => { if (!r.url().startsWith('file:') && !r.url().startsWith('data:') && !r.url().startsWith('blob:')) requests.push(r.url()); });
 const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+const view = async name => { await page.locator(`[data-view-tab="${name}"]`).click(); await settle(); };
+const reveal = async locator => {
+  await locator.evaluate(el => {
+    const panel = el.closest('[data-view-panel]');
+    if (panel) document.querySelector(`[data-view-tab="${panel.dataset.viewPanel}"]`).click();
+    for (let node = el; node; node = node.parentElement) if (node.tagName === 'DETAILS') node.open = true;
+  });
+  await settle();
+};
 const step = async (name, fn) => { await fn(); checks.push(name); console.log(`ok  ${name}`); };
 const signed = x => (x >= 0 ? '+' : '-') + Math.abs(x).toLocaleString(locale, {minimumFractionDigits: 3, maximumFractionDigits: 3, useGrouping: false});
 try {
@@ -42,15 +51,17 @@ try {
     assert.equal(await page.locator('html').getAttribute('lang'), 'id');
     assert.match(await page.title(), /baterai/i);
     assert.equal(await page.locator('[data-battery-select] option').first().innerText(), 'Semua baterai');
+    await reveal(page.locator('#glossary'));
     assert.match(await page.locator('#glossary').innerText(), /Kesehatan|kesehatan/);
+    await page.locator('#appendix').evaluate(el => { el.open = false; }); await settle();
     for (const token of await page.locator('[data-t]').evaluateAll(nodes => nodes.map(n => ({key: n.dataset.t, value: n.dataset.v})))) {
       if (typeof data.tokens[token.key] === 'number') assert.equal(Number(token.value), data.tokens[token.key]);
       else assert.equal(token.value, String(data.tokens[token.key]));
     }
   });
 
-  await step('loads directly from disk offline, all 21 figures and 92 traced numbers render', async () => {
-    assert.equal(await page.locator('figure.fig').count(), 21);
+  await step('loads directly from disk offline, all 23 figures and 92 traced numbers render', async () => {
+    assert.equal(await page.locator('figure.fig').count(), 23);
     assert.deepEqual(await page.locator('figure.fig .fig-body').evaluateAll(nodes => nodes.filter(n => !n.children.length).map(n => n.parentElement.id)), []);
     assert.equal(Object.keys(data.tokens).length, 92);
     assert.equal(data.cycles.rows.length, 632);
@@ -59,7 +70,25 @@ try {
     assert.deepEqual(await page.locator('a[href^="#"]').evaluateAll(nodes => nodes.map(n => n.getAttribute('href').slice(1)).filter(id => id && !document.getElementById(id))), []);
   });
 
+  await step('three concise primary views include Models, with keyboard and direct-link navigation', async () => {
+    assert.equal(await page.locator('[data-view-tab]').count(), 3);
+    assert.equal(await page.locator('[data-view-panel]:visible').getAttribute('id'), 'processing');
+    assert.equal(await page.locator('details.advanced[open]').count(), 0);
+    assert.ok((await page.locator('body').innerText()).split(/\s+/).length < 750, 'Default view is too verbose');
+    await view('models');
+    assert.equal(await page.locator('#fig-modelcompare').isVisible(), true);
+    assert.equal(await page.locator('#fig-modelcurve').isVisible(), true);
+    await page.locator('[data-view-tab="models"]').press('ArrowLeft'); await settle();
+    assert.equal(await page.locator('[data-view-panel]:visible').getAttribute('id'), 'analysis');
+    await page.locator('[data-view-tab="analysis"]').press('Home'); await settle();
+    assert.equal(await page.locator('[data-view-panel]:visible').getAttribute('id'), 'processing');
+    await page.goto(pathToFileURL(path.join(web, file)).href + '#models');
+    await page.waitForSelector('html[data-ready="1"]'); await settle();
+    assert.equal(await page.locator('[data-view-panel]:visible').getAttribute('id'), 'models');
+  });
+
   await step('all battery selections display exact point counts and correlation values', async () => {
+    await reveal(page.locator('#fig-scatter'));
     for (const battery of ['ALL', ...data.batteries]) {
       await page.locator('.rail [data-battery-select]').selectOption(battery);
       await settle();
@@ -78,6 +107,7 @@ try {
   });
 
   await step('all 32 worked cycles and three extraction steps work, including flagged empty states', async () => {
+    await reveal(page.locator('#fig-explorer'));
     for (const battery of data.batteries) {
       await page.locator('.rail [data-battery-select]').selectOption(battery);
       await settle();
@@ -88,11 +118,35 @@ try {
         for (const tab of ['charge', 'peak', 'discharge']) {
           await page.locator(`#fig-explorer button[data-v="${tab}"]`).click();
           await settle();
-          assert.ok((await page.locator('#fig-explorer .rule-box').innerText()).length > 80);
+          assert.ok((await page.locator('#fig-explorer .rule-box').innerText()).length > 30);
           assert.equal(await page.locator('#fig-explorer table tbody tr').count(), 9);
           assert.equal(await page.locator('#fig-explorer .flagnote').count(), example.flagged ? 1 : 0);
           if (example.flagged && tab === 'peak') assert.equal(await page.locator('#fig-explorer .empty').count(), 1);
         }
+      }
+    }
+  });
+
+  await step('all five models and twenty held-out curves match independently validated saved results', async () => {
+    const saved = JSON.parse(await fs.readFile(path.resolve(web, '../../Reports/model_results.json'), 'utf8'));
+    const format = x => x.toLocaleString(locale, {minimumFractionDigits: 3, maximumFractionDigits: 3});
+    const order = Object.keys(saved.models).sort((a, b) => saved.models[a].mean_rmse - saved.models[b].mean_rmse);
+    await view('models');
+    assert.deepEqual(await page.locator('#fig-modelcompare rect[data-model]').evaluateAll(nodes => nodes.map(n => n.dataset.model)), order);
+    for (const battery of data.batteries) {
+      await page.locator('.rail [data-battery-select]').selectOption(battery); await settle();
+      for (const name of order) {
+        await page.locator('#fig-modelcurve .fig-controls select').selectOption(name); await settle();
+        const fold = saved.models[name].folds.find(f => f.test_battery === battery);
+        for (const [metric, label] of [['rmse', 'RMSE'], ['mae', 'MAE'], ['r2', 'R²']]) {
+          assert.equal(await page.locator(`#fig-modelcurve [data-metric="${metric}"]`).innerText(), `${label} ${format(fold.metrics[metric])}${metric === 'r2' ? '' : ' pp'}`);
+        }
+        for (const series of ['actual', 'predicted']) {
+          const d = await page.locator(`#fig-modelcurve path[data-series="${series}"]`).getAttribute('d');
+          assert.equal(d.match(/[ML]/g).length, fold.n_test);
+        }
+        await page.locator('#fig-modelcurve details.twin').evaluate(el => { el.open = true; }); await settle();
+        assert.equal(await page.locator('#fig-modelcurve .twin-body tbody tr').count(), fold.n_test);
       }
     }
   });
@@ -105,13 +159,16 @@ try {
     assert.deepEqual(await page.locator('details.twin').evaluateAll(nodes => nodes.filter(n => !n.querySelector('tbody tr')).map(n => n.parentElement.id)), []);
     // Controls live outside the redrawn chart bodies, so these locators remain stable.
     for (const button of await page.locator('figure .fig-controls .seg:not([data-battery]) button').all()) {
+      await reveal(button);
       await button.click(); await settle();
     }
     for (const select of await page.locator('figure .fig-controls select:not([data-example])').all()) {
+      await reveal(select);
       const values = await select.locator('option').evaluateAll(nodes => nodes.map(n => n.value));
       for (const value of values) { await select.selectOption(value); await settle(); }
     }
     for (const checkbox of await page.locator('figure .fig-controls input[type="checkbox"]').all()) {
+      await reveal(checkbox);
       await checkbox.check(); await settle(); await checkbox.uncheck(); await settle();
     }
     await page.locator('details.twin').evaluateAll(nodes => nodes.forEach(n => { n.open = false; }));
@@ -119,6 +176,7 @@ try {
   });
 
   await step('CSV download preserves all rows and missing observations', async () => {
+    await reveal(page.locator('#dl-csv'));
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#dl-csv').click();
     const download = await downloadPromise;
@@ -136,16 +194,20 @@ try {
         await page.evaluate(theme => { localStorage.setItem('explainer-theme', theme); }, theme);
         await page.reload(); await page.waitForSelector('html[data-ready="1"]'); await settle();
         assert.equal(await page.locator('html').getAttribute('data-theme'), theme);
-        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `page overflow at ${width}px ${theme}`);
+        for (const name of ['processing', 'analysis', 'models']) {
+          await view(name);
+          assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `page overflow at ${width}px ${theme} ${name}`);
+        }
         await page.locator('details.twin').evaluateAll(nodes => nodes.forEach(n => { n.open = true; }));
         await settle();
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `expanded table overflow at ${width}px ${theme}`);
         await page.locator('details.twin').evaluateAll(nodes => nodes.forEach(n => { n.open = false; }));
         if (width === 390) {
+          await view('processing');
           assert.ok(await page.locator('#fig-explorer table.wide').evaluate(t => t.scrollWidth > t.parentElement.clientWidth));
           await page.locator('.topbar details summary').click();
           assert.equal(await page.locator('.topbar details nav a').count(), await page.locator('.rail nav a').count());
-          await page.locator('.topbar details nav a[href="#features"]').click();
+          await page.locator('.topbar details nav a[href="#models"]').click();
           assert.equal(await page.locator('.topbar details').getAttribute('open'), null);
           const before = await page.locator('.topbar [data-theme-btn]').innerText();
           await page.locator('.topbar [data-theme-btn]').click(); await settle();
@@ -153,9 +215,12 @@ try {
           await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
         }
         if ((width === 390 && theme === 'light') || (width === 1440 && theme === 'dark')) {
+          await view('processing');
           await page.evaluate(() => scrollTo(0, 0)); await settle();
           await page.screenshot({path: path.join(out, `${theme}-${width}-hero.png`)});
           await page.locator('#fig-explorer').screenshot({path: path.join(out, `${theme}-${width}-explorer.png`)});
+          await view('models');
+          await page.locator('#models').screenshot({path: path.join(out, `${theme}-${width}-models.png`)});
         }
       }
     }

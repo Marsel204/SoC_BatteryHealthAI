@@ -5,8 +5,9 @@ and offline pages in [`../../Web/HTML/`](../../Web/HTML/). It reads the existing
 repository `data/` and pinned loader/extractor in `src/`; these files are verified
 against `source_manifest.json`, not duplicated here.
 
-All four cells are exploratory. Observed analysis preserves missing values;
-there is no model training in this directory. The separate app under
+All four cells are exploratory. Observed analysis preserves missing values.
+`model_results.py` separately caches leave-one-battery-out predictions from the
+existing five models for the offline HTML. The separate app under
 [`../app/`](../app/README.md) uses the existing five SoH models.
 
 ## Reproduce
@@ -24,6 +25,7 @@ From the repository root, using the environment from `Code/app/requirements.txt`
 .venv/bin/python Code/analysis/techniques/coverage.py
 .venv/bin/python Code/analysis/techniques/uncertainty.py --self-test
 .venv/bin/python Code/analysis/learning/build.py
+.venv/bin/python Code/analysis/model_results.py
 .venv/bin/python Code/analysis/explainer/build.py
 .venv/bin/python Code/analysis/explainer/build.py --lang id
 ```
