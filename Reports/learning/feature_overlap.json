@@ -1,0 +1,533 @@
+{
+  "technique": "feature_overlap",
+  "method": "Per battery and pooled, use the same complete cases of t_cc, t_cv, dq_dv_peak and v_at_peak. Center and scale columns (sample standard deviation). For a full-rank design, VIF is the diagonal of the inverse Pearson correlation matrix. Independently verify every finite VIF against 1/(1-R\u00b2) from a least-squares regression of that feature on an explicit intercept and the other three standardized features. R\u00b2 = 1 - SSE/SST. In singular designs, inspect each auxiliary regression: a numerically zero residual gives status infinite and JSON null. Constant features have undefined VIF. Rank and condition diagnostics use the standardized feature matrix, excluding the intercept. Pairwise Spearman correlations use the identical four-feature complete cases.",
+  "caveats": [
+    "Exploratory measurements from four cells; cycles within a cell are repeated, temporally ordered observations, not independent experimental replicates.",
+    "VIF measures linear redundancy among input features, whereas Spearman describes monotonic pairwise association; the two need not agree.",
+    "High VIF can make individual linear coefficients unstable or hard to interpret even when predictions remain useful. No prediction model or accuracy estimate is produced here.",
+    "No automatic feature-drop threshold is applied, and no causal conclusion follows from these associations.",
+    "Pooling cells can mix within-cell and between-cell associations and hide battery differences. Read per-cell results alongside ALL.",
+    "Capacity, SoH and cycle number are never included as features. These four inputs are available at charge completion only for unflagged cycles, according to data_contracts.md.",
+    "Complete-case analysis excludes the five jointly masked charging cycles without imputation; missingness can affect conclusions.",
+    "The reported condition number uses standardized feature columns, so it reflects overlap rather than differences in physical units. It is not the condition number of a predictive model.",
+    "Exact or numerical perfect collinearity is represented by a null VIF and status infinite; undefined cases are also null with a distinct status. A singular matrix warns rather than producing a misleading pseudoinverse VIF."
+  ],
+  "features": [
+    "t_cc",
+    "t_cv",
+    "dq_dv_peak",
+    "v_at_peak"
+  ],
+  "records": [
+    {
+      "battery_id": "ALL",
+      "feature": "t_cc",
+      "vif": 31.51962360761941,
+      "status": "finite",
+      "n_rows": 627,
+      "auxiliary_r_squared": 0.9682737328196307,
+      "independently_verified_vif": 31.51962360761907
+    },
+    {
+      "battery_id": "ALL",
+      "feature": "t_cv",
+      "vif": 6.486817224437225,
+      "status": "finite",
+      "n_rows": 627,
+      "auxiliary_r_squared": 0.8458411937008516,
+      "independently_verified_vif": 6.486817224437242
+    },
+    {
+      "battery_id": "ALL",
+      "feature": "dq_dv_peak",
+      "vif": 18.58477470566442,
+      "status": "finite",
+      "n_rows": 627,
+      "auxiliary_r_squared": 0.9461925142576403,
+      "independently_verified_vif": 18.58477470566431
+    },
+    {
+      "battery_id": "ALL",
+      "feature": "v_at_peak",
+      "vif": 9.016865773924772,
+      "status": "finite",
+      "n_rows": 627,
+      "auxiliary_r_squared": 0.889096718851929,
+      "independently_verified_vif": 9.016865773924788
+    },
+    {
+      "battery_id": "B0005",
+      "feature": "t_cc",
+      "vif": 245.35060886210817,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9959242000472807,
+      "independently_verified_vif": 245.35060886214444
+    },
+    {
+      "battery_id": "B0005",
+      "feature": "t_cv",
+      "vif": 31.006301986271897,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9677484918890781,
+      "independently_verified_vif": 31.006301986273705
+    },
+    {
+      "battery_id": "B0005",
+      "feature": "dq_dv_peak",
+      "vif": 123.09242623274895,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9918760233216212,
+      "independently_verified_vif": 123.09242623275921
+    },
+    {
+      "battery_id": "B0005",
+      "feature": "v_at_peak",
+      "vif": 23.3604807668452,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9571926618300066,
+      "independently_verified_vif": 23.36048076684596
+    },
+    {
+      "battery_id": "B0006",
+      "feature": "t_cc",
+      "vif": 77.68829148001626,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9871280474708687,
+      "independently_verified_vif": 77.68829148000954
+    },
+    {
+      "battery_id": "B0006",
+      "feature": "t_cv",
+      "vif": 6.801624947855898,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.8529763096809337,
+      "independently_verified_vif": 6.8016249478558946
+    },
+    {
+      "battery_id": "B0006",
+      "feature": "dq_dv_peak",
+      "vif": 59.85090918409683,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9832918160537202,
+      "independently_verified_vif": 59.85090918409828
+    },
+    {
+      "battery_id": "B0006",
+      "feature": "v_at_peak",
+      "vif": 47.87124038483825,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9791106311020761,
+      "independently_verified_vif": 47.87124038483434
+    },
+    {
+      "battery_id": "B0007",
+      "feature": "t_cc",
+      "vif": 96.26616476549874,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.989612134206904,
+      "independently_verified_vif": 96.26616476549181
+    },
+    {
+      "battery_id": "B0007",
+      "feature": "t_cv",
+      "vif": 39.216806596840506,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9745007284687837,
+      "independently_verified_vif": 39.21680659683917
+    },
+    {
+      "battery_id": "B0007",
+      "feature": "dq_dv_peak",
+      "vif": 55.97306680180069,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9821342646179986,
+      "independently_verified_vif": 55.973066801797415
+    },
+    {
+      "battery_id": "B0007",
+      "feature": "v_at_peak",
+      "vif": 11.949956333893233,
+      "status": "finite",
+      "n_rows": 166,
+      "auxiliary_r_squared": 0.9163176858509734,
+      "independently_verified_vif": 11.949956333893182
+    },
+    {
+      "battery_id": "B0018",
+      "feature": "t_cc",
+      "vif": 24.084452486357765,
+      "status": "finite",
+      "n_rows": 129,
+      "auxiliary_r_squared": 0.9584794381119345,
+      "independently_verified_vif": 24.084452486357968
+    },
+    {
+      "battery_id": "B0018",
+      "feature": "t_cv",
+      "vif": 3.1489685487035337,
+      "status": "finite",
+      "n_rows": 129,
+      "auxiliary_r_squared": 0.6824356977424542,
+      "independently_verified_vif": 3.1489685487035506
+    },
+    {
+      "battery_id": "B0018",
+      "feature": "dq_dv_peak",
+      "vif": 16.217331578695244,
+      "status": "finite",
+      "n_rows": 129,
+      "auxiliary_r_squared": 0.9383375745172711,
+      "independently_verified_vif": 16.21733157869522
+    },
+    {
+      "battery_id": "B0018",
+      "feature": "v_at_peak",
+      "vif": 7.715893101658453,
+      "status": "finite",
+      "n_rows": 129,
+      "auxiliary_r_squared": 0.8703973750251859,
+      "independently_verified_vif": 7.715893101658484
+    }
+  ],
+  "pairs": [
+    {
+      "battery_id": "ALL",
+      "feature_a": "t_cc",
+      "feature_b": "t_cv",
+      "spearman": -0.8917501156775398,
+      "n_pairs": 627
+    },
+    {
+      "battery_id": "ALL",
+      "feature_a": "t_cc",
+      "feature_b": "dq_dv_peak",
+      "spearman": 0.9776697133550849,
+      "n_pairs": 627
+    },
+    {
+      "battery_id": "ALL",
+      "feature_a": "t_cc",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9164799034357561,
+      "n_pairs": 627
+    },
+    {
+      "battery_id": "ALL",
+      "feature_a": "t_cv",
+      "feature_b": "dq_dv_peak",
+      "spearman": -0.857719680891862,
+      "n_pairs": 627
+    },
+    {
+      "battery_id": "ALL",
+      "feature_a": "t_cv",
+      "feature_b": "v_at_peak",
+      "spearman": 0.897990921689476,
+      "n_pairs": 627
+    },
+    {
+      "battery_id": "ALL",
+      "feature_a": "dq_dv_peak",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9076054784551815,
+      "n_pairs": 627
+    },
+    {
+      "battery_id": "B0005",
+      "feature_a": "t_cc",
+      "feature_b": "t_cv",
+      "spearman": -0.9613145599026175,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0005",
+      "feature_a": "t_cc",
+      "feature_b": "dq_dv_peak",
+      "spearman": 0.9913242404447278,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0005",
+      "feature_a": "t_cc",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9555009877301096,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0005",
+      "feature_a": "t_cv",
+      "feature_b": "dq_dv_peak",
+      "spearman": -0.9483468309997718,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0005",
+      "feature_a": "t_cv",
+      "feature_b": "v_at_peak",
+      "spearman": 0.9625790643192007,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0005",
+      "feature_a": "dq_dv_peak",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9425463760929963,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0006",
+      "feature_a": "t_cc",
+      "feature_b": "t_cv",
+      "spearman": -0.8938419684293648,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0006",
+      "feature_a": "t_cc",
+      "feature_b": "dq_dv_peak",
+      "spearman": 0.9964084926425257,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0006",
+      "feature_a": "t_cc",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9855001744596341,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0006",
+      "feature_a": "t_cv",
+      "feature_b": "dq_dv_peak",
+      "spearman": -0.8912972188773194,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0006",
+      "feature_a": "t_cv",
+      "feature_b": "v_at_peak",
+      "spearman": 0.8905128063865343,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0006",
+      "feature_a": "dq_dv_peak",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9843615957940799,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0007",
+      "feature_a": "t_cc",
+      "feature_b": "t_cv",
+      "spearman": -0.9529011456619891,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0007",
+      "feature_a": "t_cc",
+      "feature_b": "dq_dv_peak",
+      "spearman": 0.9886037195318711,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0007",
+      "feature_a": "t_cc",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9106871610826467,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0007",
+      "feature_a": "t_cv",
+      "feature_b": "dq_dv_peak",
+      "spearman": -0.9514792340566193,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0007",
+      "feature_a": "t_cv",
+      "feature_b": "v_at_peak",
+      "spearman": 0.9499287732470743,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0007",
+      "feature_a": "dq_dv_peak",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9167289736788947,
+      "n_pairs": 166
+    },
+    {
+      "battery_id": "B0018",
+      "feature_a": "t_cc",
+      "feature_b": "t_cv",
+      "spearman": -0.7641491502683364,
+      "n_pairs": 129
+    },
+    {
+      "battery_id": "B0018",
+      "feature_a": "t_cc",
+      "feature_b": "dq_dv_peak",
+      "spearman": 0.9316077817531307,
+      "n_pairs": 129
+    },
+    {
+      "battery_id": "B0018",
+      "feature_a": "t_cc",
+      "feature_b": "v_at_peak",
+      "spearman": -0.9085867620751343,
+      "n_pairs": 129
+    },
+    {
+      "battery_id": "B0018",
+      "feature_a": "t_cv",
+      "feature_b": "dq_dv_peak",
+      "spearman": -0.6358955724508051,
+      "n_pairs": 129
+    },
+    {
+      "battery_id": "B0018",
+      "feature_a": "t_cv",
+      "feature_b": "v_at_peak",
+      "spearman": 0.6392497763864045,
+      "n_pairs": 129
+    },
+    {
+      "battery_id": "B0018",
+      "feature_a": "dq_dv_peak",
+      "feature_b": "v_at_peak",
+      "spearman": -0.944605322003578,
+      "n_pairs": 129
+    }
+  ],
+  "summary": [
+    "Pooled complete cases: 627 of 632 aligned cycles; 5 cycles excluded without imputation.",
+    "Pooled VIF: t_cc 31.52, t_cv 6.49, dq_dv_peak 18.58, v_at_peak 9.02.",
+    "Per-cell VIF: B0005: t_cc 245.35, t_cv 31.01, dq_dv_peak 123.09, v_at_peak 23.36; B0006: t_cc 77.69, t_cv 6.80, dq_dv_peak 59.85, v_at_peak 47.87; B0007: t_cc 96.27, t_cv 39.22, dq_dv_peak 55.97, v_at_peak 11.95; B0018: t_cc 24.08, t_cv 3.15, dq_dv_peak 16.22, v_at_peak 7.72.",
+    "Compare the battery-specific estimates with pooled estimates before interpreting any coefficient; no feature-removal decision follows automatically."
+  ],
+  "diagnostics": [
+    {
+      "battery_id": "ALL",
+      "n_input_rows": 632,
+      "n_complete_rows": 627,
+      "n_excluded_rows": 5,
+      "n_features": 4,
+      "rank": 4,
+      "rank_with_intercept": 5,
+      "condition_number": 13.423863379668136,
+      "condition_status": "finite",
+      "singular_values": [
+        48.191006117681845,
+        10.628463428980757,
+        7.468262806155315,
+        3.5899505794041553
+      ],
+      "inverse_vs_auxiliary_max_relative_error": 1.0707862621952872e-14,
+      "warnings": []
+    },
+    {
+      "battery_id": "B0005",
+      "n_input_rows": 167,
+      "n_complete_rows": 166,
+      "n_excluded_rows": 1,
+      "n_features": 4,
+      "rank": 4,
+      "rank_with_intercept": 5,
+      "condition_number": 37.92770687016559,
+      "condition_status": "finite",
+      "singular_values": [
+        25.422465695983814,
+        2.9515263857283505,
+        2.130127853732987,
+        0.6702874440316201
+      ],
+      "inverse_vs_auxiliary_max_relative_error": 1.478133736915746e-13,
+      "warnings": []
+    },
+    {
+      "battery_id": "B0006",
+      "n_input_rows": 167,
+      "n_complete_rows": 166,
+      "n_excluded_rows": 1,
+      "n_features": 4,
+      "rank": 4,
+      "rank_with_intercept": 5,
+      "condition_number": 21.652880701251803,
+      "condition_status": "finite",
+      "singular_values": [
+        25.22595433874754,
+        4.430779636223687,
+        1.6316117897812212,
+        1.1650160866257933
+      ],
+      "inverse_vs_auxiliary_max_relative_error": 8.652184456933461e-14,
+      "warnings": []
+    },
+    {
+      "battery_id": "B0007",
+      "n_input_rows": 167,
+      "n_complete_rows": 166,
+      "n_excluded_rows": 1,
+      "n_features": 4,
+      "rank": 4,
+      "rank_with_intercept": 5,
+      "condition_number": 24.23814260250107,
+      "condition_status": "finite",
+      "singular_values": [
+        25.28256060387377,
+        3.959433404185059,
+        2.0067336614192146,
+        1.0430898529850603
+      ],
+      "inverse_vs_auxiliary_max_relative_error": 7.20387803743118e-14,
+      "warnings": []
+    },
+    {
+      "battery_id": "B0018",
+      "n_input_rows": 131,
+      "n_complete_rows": 129,
+      "n_excluded_rows": 2,
+      "n_features": 4,
+      "rank": 4,
+      "rank_with_intercept": 5,
+      "condition_number": 11.238430876448746,
+      "condition_status": "finite",
+      "singular_values": [
+        20.75839539755911,
+        8.153240540833652,
+        3.3469309882686216,
+        1.8470901877467967
+      ],
+      "inverse_vs_auxiliary_max_relative_error": 8.408108085759152e-15,
+      "warnings": []
+    }
+  ],
+  "source": {
+    "path": "Reports/cycles_observed_flagged.csv",
+    "sha256": "e0cc48124d9aeca2872130d869dd0da39a76335ca54b5913d852e7c29d914fe6",
+    "availability_reference": "Reports/data_contracts.md"
+  },
+  "verification": {
+    "inverse_vif_vs_independent_intercept_regression": "passed for all full-rank finite estimates",
+    "relative_tolerance": 1e-07,
+    "absolute_tolerance": 1e-09,
+    "synthetic_checks": [
+      "Synthetic independent inputs yield VIF 1.",
+      "Synthetic exact redundancy yields null/infinite VIF and a rank warning; unrelated input retains VIF 1.",
+      "Synthetic constant input yields null/undefined_constant; all synthetic results serialize as strict JSON."
+    ]
+  }
+}

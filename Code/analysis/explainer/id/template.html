@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Dari data mentah baterai hingga hasil analisis</title>
+<style>/*__STYLE__*/</style>
+</head>
+<body>
+<a class="skip" href="#main">Langsung ke penjelasan</a>
+<div class="topbar">
+  <strong>Memahami data baterai</strong>
+  <select data-battery-select aria-label="Baterai yang ditampilkan pada grafik"></select>
+  <button type="button" data-theme-btn aria-label="Ganti tema warna">Tema: otomatis</button>
+  <details><summary>Daftar isi</summary><nav aria-label="Daftar isi (ponsel)"></nav></details>
+</div>
+<div class="shell">
+<aside class="rail" aria-label="Daftar isi dan pengaturan">
+  <a class="rail-brand" href="#start">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="16" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
+    <span><strong>Memahami data baterai</strong><span>Dari data mentah hingga temuan</span></span>
+  </a>
+  <nav aria-label="Daftar isi">
+    <ol>
+      <li><a href="#start"><span class="n"></span>Mulai di sini</a></li>
+      <li class="part-label">Bagian 1 · Dari berkas ke tabel bersih</li>
+      <li><a href="#raw"><span class="n">1</span>Data mentah</a></li>
+      <li><a href="#cycles"><span class="n">2</span>Menyusun operasi menjadi siklus</a></li>
+      <li><a href="#features"><span class="n">3</span>Sembilan angka dari kurva</a></li>
+      <li><a href="#quality"><span class="n">4</span>Lima siklus yang berbeda</a></li>
+      <li><a href="#contracts"><span class="n">5</span>Aturan dan waktu ketersediaan</a></li>
+      <li class="part-label">Bagian 2 · Apa yang diceritakan tabel</li>
+      <li><a href="#labels"><span class="n">6</span>Nilai kesehatan baterai</a></li>
+      <li><a href="#relationships"><span class="n">7</span>Fitur dan kesehatan baterai</a></li>
+      <li><a href="#trend"><span class="n">8</span>Tren atau hubungan lain?</a></li>
+      <li><a href="#curves"><span class="n">9</span>Pola melengkung</a></li>
+      <li><a href="#overlap"><span class="n">10</span>Apakah fiturnya mengulang informasi?</a></li>
+      <li><a href="#clusters"><span class="n">11</span>Kelompok siklus yang mirip</a></li>
+      <li><a href="#coverage"><span class="n">12</span>Batas cakupan data</a></li>
+      <li><a href="#uncertainty"><span class="n">13</span>Seberapa yakin kita?</a></li>
+      <li class="part-label">Bagian 3 · Membaca hasil dengan bijak</li>
+      <li><a href="#conclusions"><span class="n">14</span>Kesimpulan yang didukung data</a></li>
+      <li><a href="#appendix"><span class="n"></span>Mengulang analisis, sumber, dan istilah</a></li>
+    </ol>
+  </nav>
+  <div class="rail-tools">
+    <span class="lab">Baterai pada grafik</span>
+    <select data-battery-select aria-label="Baterai yang ditampilkan pada grafik"></select>
+    <button type="button" data-theme-btn aria-label="Ganti tema warna">Tema: otomatis</button>
+  </div>
+</aside>
+
+<div class="content">
+<main id="main">
+
+<header class="hero" id="start">
+  <p class="kicker">Data penuaan baterai NASA · sel B0005, B0006, B0007, dan B0018</p>
+  <h1>Dari data mentah baterai hingga hasil analisis</h1>
+  <p class="lede">Halaman ini mengikuti empat sel baterai litium-ion, mulai dari rekaman mentahnya menjadi {{n_cycles}} siklus yang dianalisis, lalu menelusuri setiap analisis dalam proyek ini. Setiap angka berasal dari berkas hasil yang tersimpan. Setiap grafik juga bisa dibaca dalam bentuk tabel.</p>
+  <div class="kpis" role="list">
+    <div class="kpi" role="listitem"><b>{{n_batteries}}</b><span>sel baterai</span></div>
+    <div class="kpi" role="listitem"><b>{{n_ops}}</b><span>operasi dengan catatan waktu pada data mentah</span></div>
+    <div class="kpi" role="listitem"><b>{{n_cycles}}</b><span>siklus yang dipasangkan, dari {{n_raw_discharges}} rekaman pengosongan</span></div>
+    <div class="kpi" role="listitem"><b>{{n_features}}</b><span>angka hasil pengukuran untuk setiap siklus</span></div>
+    <div class="kpi" role="listitem"><b>{{n_flagged}}</b><span>siklus yang angka pengisiannya dibiarkan kosong</span></div>
+  </div>
+  <div class="callout">
+    <h2>Baca ini terlebih dahulu</h2>
+    <ul>
+      <li><b>Masih berupa eksplorasi.</b> Keempat sel sudah diperiksa. Jadi, tidak ada sel uji yang belum pernah dilihat. Hasil ini belum menunjukkan perilaku sel baru.</li>
+      <li><b>Menggambarkan data.</b> Korelasi menunjukkan bagaimana dua angka berubah bersama pada sel-sel ini. Korelasi tidak membuktikan sebab-akibat dan bukan ukuran ketepatan prediksi.</li>
+      <li><b>Tanpa model prediksi.</b> Analisis ini tidak melatih model prediksi. Tahap Model yang terpisah dalam proyek memakai sembilan fitur yang sama.</li>
+      <li><b>Nilai hilang tidak diisi.</b> Nilai yang hilang tetap kosong: analisis ini tidak mengisinya dengan interpolasi atau imputasi.</li>
+    </ul>
+  </div>
+  <nav class="pipeline" aria-label="Alur dari data mentah hingga temuan">
+    <ol>
+      <li><a href="#raw"><span class="step">Langkah 1</span><strong>Data mentah</strong><small>{{n_ops}} operasi dengan waktu tercatat, diperiksa lewat checksum</small></a></li>
+      <li><a href="#cycles"><span class="step">Langkah 2</span><strong>Siklus</strong><small>Setiap pengosongan dipasangkan dengan pengisian dan uji impedansi</small></a></li>
+      <li><a href="#features"><span class="step">Langkah 3</span><strong>Sembilan angka</strong><small>Aturan sederhana diterapkan pada kurva rekaman</small></a></li>
+      <li><a href="#quality"><span class="step">Langkah 4</span><strong>Pemeriksaan kualitas</strong><small>Lima rekaman pengisian tidak wajar, nilainya dikosongkan</small></a></li>
+      <li><a href="#contracts"><span class="step">Langkah 5</span><strong>Aturan dan waktu</strong><small>Apa yang lolos, dan kapan nilainya tersedia</small></a></li>
+      <li><a href="#labels"><span class="step">Langkah 6–13</span><strong>Analisis</strong><small>Delapan pertanyaan untuk tabel yang sama</small></a></li>
+      <li><a href="#conclusions"><span class="step">Langkah 14</span><strong>Membaca hasil</strong><small>Kesimpulan yang didukung data dan batasnya</small></a></li>
+    </ol>
+  </nav>
+  <p class="fig-note">Cara memakai halaman ini: pilih baterai di sebelah kiri (atau di bagian atas pada ponsel). Semua grafik yang mendukung pilihan itu akan ikut berubah. Arahkan penunjuk atau fokuskan tanda pada grafik untuk melihat nilainya. Kata bergaris titik memiliki penjelasan singkat. Buka <em>Lihat data sebagai tabel</em> di bawah grafik untuk membaca angka yang sama dalam bentuk teks.</p>
+</header>
+
+<!-- ===================================================== PART 1 -->
+<div class="part" id="part1"><p class="kicker">Bagian 1</p><p class="part-title">Dari berkas ke tabel bersih</p></div>
+
+<section class="chapter" id="raw" aria-labelledby="raw-h">
+  <div class="chapter-head"><p class="kicker">Langkah 1 · Pengolahan data</p><h2 id="raw-h">Data awalnya seperti apa?</h2></div>
+  <p class="takeaway">Empat rekaman, {{n_ops}} operasi dengan waktu tercatat, dan satu aturan untuk menyusunnya menjadi siklus.</p>
+  <div class="prose">
+    <p>Data ini adalah rekaman penuaan empat sel baterai litium-ion dari NASA. Berkas setiap sel berisi daftar panjang <em>operasi</em> yang diurutkan berdasarkan waktu. Operasinya berupa <b>pengisian</b> (total {{n_ops_charge}}), <b>pengosongan</b> ({{n_ops_discharge}}), atau <span class="term" data-term="impedance">uji impedansi</span> ({{n_ops_impedance}}). Rekaman pengisian dan pengosongan berisi sampel tegangan, arus, dan suhu. Setiap operasi juga memiliki catatan waktu.</p>
+    <p>Berkas tersebut tidak pernah diedit. Analisis memakai salinan tetap dari repositori sumber proyek pada commit <code>{{source_commit}}</code>. Sebelum dijalankan, checksum SHA-256 setiap berkas mentah diperiksa untuk memastikan isinya sesuai.</p>
+  </div>
+  <fig id="tape" title="Semua operasi dalam setiap rekaman" sub="Posisi menunjukkan jenis operasi, warna menunjukkan baterainya." />
+  <div class="prose">
+    <p>B0005, B0006, dan B0007 mengikuti jadwal yang sama: masing-masing {{dis_main}} pengosongan dan {{imp_main}} uji impedansi. B0018 direkam belakangan, dengan {{dis_b0018}} pengosongan dan hanya {{imp_b0018}} uji. Perbedaan ini penting pada langkah berikutnya karena uji impedansi menghasilkan dua dari sembilan angka fitur.</p>
+    <p>Program pembaca data sumber melewatkan pengosongan pertama setiap sel. Catatannya menyebut bahwa pengisian awal tersebut hanya sebagian. Karena itu, dari {{n_raw_discharges}} rekaman pengosongan tersisa {{n_cycles}} siklus, dan nomor siklus dimulai dari 2.</p>
+  </div>
+</section>
+
+<section class="chapter" id="cycles" aria-labelledby="cycles-h">
+  <div class="chapter-head"><p class="kicker">Langkah 2 · Pengolahan data</p><h2 id="cycles-h">Pengisian, pengosongan, dan uji impedansi mana yang dipasangkan?</h2></div>
+  <p class="takeaway">Setiap pengosongan menjadi satu siklus. Pasangannya adalah pengisian tepat sebelumnya dan uji impedansi yang waktunya paling dekat, meskipun kadang uji itu dilakukan sesudahnya.</p>
+  <div class="prose">
+    <p>Satu <span class="term" data-term="cycle">siklus</span> dalam analisis ini adalah satu pengosongan beserta informasi di sekitarnya:</p>
+    <ul class="rule-list">
+      <li><span class="ic">1</span><span><b>Nilai acuan.</b> <span class="term" data-term="capacity">Kapasitas</span> yang terukur saat pengosongan, dalam ampere-jam. <span class="term" data-term="soh">Kesehatan baterai</span> atau SoH adalah kapasitas &divide; 2 Ah &times; 100.</span></li>
+      <li><span class="ic">2</span><span><b>Pengisian.</b> Operasi pengisian terdekat sebelum pengosongan tersebut.</span></li>
+      <li><span class="ic">3</span><span><b>Uji impedansi.</b> Uji yang waktunya paling dekat dengan pengosongan, baik <em>sebelum maupun sesudahnya</em>. Program pembaca tidak memeriksa apakah uji itu terjadi lebih awal atau lebih akhir.</span></li>
+      <li><span class="ic">4</span><span><b>Jeda antarpengosongan.</b> Jumlah jam dari akhir pengosongan sebelumnya hingga awal pengosongan ini. Waktu pengisian di antaranya ikut dihitung, jadi ini bukan waktu istirahat murni.</span></li>
+    </ul>
+    <p>Ada kasus khusus: siklus 89 dan 90 pada B0005, B0006, dan B0007 memakai satu rekaman pengisian yang sama karena tidak ada pengisian di antara kedua pengosongan itu.</p>
+  </div>
+  <fig id="timeline" title="Satu siklus dan operasi yang dipasangkan dengannya" sub="Pilih sel dan siklus. Batang berwarna termasuk dalam siklus ini; batang abu-abu adalah operasi lain di sekitarnya." />
+  <div class="prose">
+    <h3>Mengapa waktu uji impedansi penting?</h3>
+    <p>Jika sebuah angka hendak dipakai pada waktu tertentu, hasil rekaman setelah waktu itu belum tersedia. Grafik berikut menghitung jarak waktu ke uji impedansi terdekat untuk setiap siklus.</p>
+  </div>
+  <fig id="eis" title="Seberapa jauh waktu uji impedansi terdekat?" sub="Jumlah siklus berdasarkan waktu mulai uji terdekat, dibandingkan dengan waktu pengosongannya." />
+  <p class="prose">Pada {{eis_after_charge}} dari {{n_cycles}} siklus ({{eis_after_charge_pct}}), uji terdekat dimulai setelah pengisian selesai. Pada {{eis_after_discharge}} siklus ({{eis_after_discharge_pct}}), uji itu dimulai setelah pengosongan berlangsung. Ini boleh digunakan untuk menggambarkan kejadian yang sudah berlalu, tetapi berarti Re dan Rct belum bisa diketahui saat pengisian berakhir. Hal ini dibahas lagi pada bab 5.</p>
+</section>
+
+<section class="chapter" id="features" aria-labelledby="features-h">
+  <div class="chapter-head"><p class="kicker">Langkah 3 · Pengolahan data</p><h2 id="features-h">Bagaimana kurva diubah menjadi sembilan angka?</h2></div>
+  <p class="takeaway">Setiap angka berasal dari aturan sederhana yang diterapkan pada kurva rekaman. Tidak ada model yang dilatih untuk menghasilkan angka-angka ini.</p>
+  <div class="prose">
+    <p>Satu pengisian atau pengosongan tersimpan sebagai ratusan hingga ribuan sampel tegangan, arus, dan suhu. Kode ekstraksi dari repositori sumber mengubahnya menjadi sembilan angka per siklus. Di bawah ini, pilih siklus lalu ikuti aturannya satu per satu. Setiap nilai dihitung ulang dari rekaman mentah dengan kode yang sama, dan semuanya cocok dengan tabel tersimpan.</p>
+  </div>
+  <fig id="explorer" title="Dari kurva menjadi angka, satu siklus demi satu" sub="Bagian kurva yang diarsir atau ditandai adalah sampel yang benar-benar dipakai oleh aturan perhitungan." />
+  <div class="prose">
+    <h3>Sembilan angka dalam satu tabel</h3>
+    <p>Tabel ini menjelaskan apa yang diukur setiap fitur, rentang nilainya dalam data, dan apakah nilainya sudah tersedia pada dua waktu tertentu dalam siklus. Dua kolom terakhir dijelaskan pada bab 5.</p>
+  </div>
+  <fig id="dict" title="Sembilan fitur" sub="Satu baris untuk setiap fitur." notwin />
+  <div class="prose">
+    <h3>Apakah pengaturan aturan mengubah hasilnya?</h3>
+    <p>Puncak kurva pengisian dicari pada kisi tegangan berjarak 10 mV. Apakah pilihan ini penting? Audit tersimpan mengulang pencarian puncak pada kisi 5 mV dan 20 mV, lalu membandingkan urutan peringkat siklusnya.</p>
+  </div>
+  <fig id="bins" title="Puncak pada beberapa kisi tegangan" sub="Seberapa mirip urutan siklusnya dengan hasil pada kisi 10 mV." />
+</section>
+
+<section class="chapter" id="quality" aria-labelledby="quality-h">
+  <div class="chapter-head"><p class="kicker">Langkah 4 · Pengolahan data</p><h2 id="quality-h">Adakah siklus yang tampak tidak wajar?</h2></div>
+  <p class="takeaway">Lima rekaman pengisian tidak memiliki kenaikan tegangan yang normal. Empat angka pengisiannya dibiarkan kosong dalam analisis ini.</p>
+  <div class="prose">
+    <p>Pengisian normal dimulai jauh di bawah 4 V, naik selama tahap arus konstan, lalu bertahan di sekitar 4,2 V saat arus mengecil. Lima rekaman tidak memiliki kenaikan itu: B0005, B0006, dan B0007 pada siklus 31 memiliki lonjakan awal tegangan yang tidak masuk akal, melebihi 8 V. Sementara itu, B0018 pada siklus 46 dan 56 menyerupai pengisian tambahan saat baterai sudah hampir penuh. Rekaman tersebut <b>tidak memiliki sampel</b> pada kenaikan 3,8 hingga 4,18 V dengan arus setidaknya 0,5 A (rekaman normal memiliki ratusan sampel), sehingga aturan tahap CC dan puncak kurva pengisian tidak menemukan bagian yang bisa diukur.</p>
+  </div>
+  <fig id="flagpair" title="Pengisian normal dibandingkan dengan yang ditandai" sub="Tegangan selama rekaman pengisian. Arsiran menunjukkan tahap CC dan CV yang ditemukan oleh aturan." />
+  <div class="prose">
+    <h3>Perlakuan pada alur sumber dan pada analisis ini</h3>
+    <p>Alur pengolahan sumber menganggap siklus tidak valid bila <code>t_cc</code> kurang dari 100 s atau <code>dq_dv_peak</code> kurang dari 0,1 Ah/V. Angka pengisian kemudian diganti dengan <span class="term" data-term="interpolation">interpolasi</span>, yaitu perkiraan dari siklus di sebelahnya. Karena urutan pemeriksaan kolomnya, <b>{{n_filled_cells}}</b> sel tabel berubah (t_cc, t_cv, dan dq_dv_peak pada lima siklus), sedangkan nilai pengganti 4 V untuk tegangan puncak tetap dipertahankan.</p>
+    <p>Analisis ini mempertahankan kelima baris dan nilai kapasitasnya, tetapi <span class="term" data-term="masked">mengosongkan keempat angka pengisian</span> ({{n_masked_cells}} sel tabel). Angka yang terisi bisa terlihat seperti hasil pengukuran; nilai kosong tidak membuat klaim itu. Setiap grafik mencantumkan jumlah siklus yang dipakai.</p>
+  </div>
+  <fig id="flags" title="Rangkaian data yang sama, diisi atau dikosongkan" sub="Satu fitur pengisian sepanjang siklus suatu sel. Ganti tampilan untuk melihat perlakuan pada CSV sumber." />
+  <div id="flag-table"></div>
+  <div class="prose">
+    <p>Untuk memeriksa seluruh alur pengolahan, audit tersimpan menyusun ulang CSV sumber dari berkas mentah: {{recon_columns}} kolom, {{recon_mismatches}} ketidakcocokan.</p>
+  </div>
+</section>
+
+<section class="chapter" id="contracts" aria-labelledby="contracts-h">
+  <div class="chapter-head"><p class="kicker">Langkah 5 · Pengolahan data</p><h2 id="contracts-h">Apakah tabel mengikuti aturannya, dan kapan setiap nilai tersedia?</h2></div>
+  <p class="takeaway">{{n_rules}} aturan yang dapat dipakai ulang lolos pemeriksaan, pengecualian dicatat, dan hanya empat fitur pengisian yang jelas tersedia saat pengisian selesai.</p>
+  <div class="prose">
+    <p><span class="term" data-term="contract">Kontrak data</span> adalah daftar aturan tertulis yang harus dipenuhi tabel: kunci siklus tidak boleh berulang, SoH harus sama dengan kapasitas &divide; 2 Ah &times; 100, nilai yang ditandai harus kosong, panjang larik harus sesuai, urutan waktu harus meningkat, dan setiap siklus harus terhubung ke operasi mentah yang benar. Program memeriksa aturan tersebut dan melaporkan pengecualian alih-alih menyembunyikannya.</p>
+  </div>
+  <fig id="rules" title="Kontrak data, aturan demi aturan" sub="Pilih jenis pemeriksaan. Di bawah daftar penanda, pemeriksaan diuji dengan sengaja merusak salinan data." />
+  <div class="prose">
+    <h3>Pengecualian yang dicatat</h3>
+    <ul>
+      <li>{{n_flagged}} siklus memiliki tanda masalah kualitas pengisian (bab 4).</li>
+      <li>CSV sumber mengisi {{n_filled_cells}} sel fitur yang tidak dipakai dalam analisis ini.</li>
+      <li>Satu operasi pengisian mentah yang tidak digunakan (B0018, operasi 114) berisi enam sampel sensor yang bukan angka terhingga. Operasi itu tidak dipilih untuk siklus mana pun, sehingga tidak ada siklus yang terdampak dan tidak ada data yang diperbaiki.</li>
+      <li>SoH di atas 100% diterima: B0006 memiliki {{above_100}} siklus seperti itu. Angka 2 Ah adalah acuan, bukan batas maksimum. Memotong nilainya akan mengubah nilai acuan kesehatan baterai.</li>
+    </ul>
+    <h3>Kapan setiap angka diketahui?</h3>
+    <p>Proyek ini belum menetapkan waktu prediksi, sehingga dua waktu diperlihatkan: saat pengisian berakhir dan saat pengosongan dimulai.</p>
+  </div>
+  <fig id="avail" title="Fitur yang tersedia pada setiap waktu" sub="Arahkan penunjuk ke tanda untuk melihat jumlah siklus yang mendasarinya." notwin />
+  <div class="prose">
+    <ul>
+      <li><b>Fitur pengisian</b> sudah terekam saat pengisian selesai, tetapi hanya untuk {{n_complete}} siklus yang tidak ditandai bermasalah.</li>
+      <li><b>Kenaikan suhu</b> memerlukan seluruh proses pengosongan. <b>Penurunan tegangan</b> memerlukan saat beban mulai bekerja, sekitar 19 hingga 36 detik setelah pengosongan dimulai.</li>
+      <li><b>Re dan Rct</b> berasal dari uji terdekat. Sebanyak {{eis_after_charge}} uji dimulai setelah pengisian selesai. Ketersediaan hasil uji yang dimulai lebih awal juga belum dapat dipastikan karena berkas tidak mencatat waktu selesainya.</li>
+      <li><b>Jeda antarpengosongan</b> berakhir saat pengosongan dimulai. Jadi, nilainya baru pasti pada saat itu, dan waktu pengisian ikut dihitung.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================================================== PART 2 -->
+<div class="part" id="part2"><p class="kicker">Bagian 2</p><p class="part-title">Apa yang diceritakan tabel</p></div>
+<div class="prose" style="margin-top:26px"><p>Mulai bagian ini, semua grafik memakai tabel hasil pengamatan: {{n_cycles}} siklus, dengan angka pengisian pada {{n_flagged}} siklus bermasalah dibiarkan kosong. Setiap grafik mencantumkan jumlah siklus yang dipakai (n). Delapan pertanyaan berikut melihat sisi yang berbeda dari tabel yang sama.</p></div>
+
+<section class="chapter" id="labels" aria-labelledby="labels-h">
+  <div class="chapter-head"><p class="kicker">Langkah 6 · Analisis</p><h2 id="labels-h">Bagaimana kesehatan sel berubah sepanjang pemakaiannya?</h2></div>
+  <p class="takeaway">Pada keempat sel, SoH turun dari {{soh_max}}% hingga {{soh_min}}%, disertai lonjakan setelah jeda panjang dan beberapa nilai di atas 100%.</p>
+  <div class="prose"><p>Sebelum menghubungkan hal lain dengan kesehatan baterai, lihat dahulu kesehatan itu sendiri. Karena SoH tepat sama dengan kapasitas &divide; 2 &times; 100, korelasi terhadap SoH dan terhadap kapasitas bernilai sama.</p></div>
+  <fig id="soh" title="Kesehatan baterai terhadap nomor siklus" sub="Satu garis untuk setiap sel. Arahkan penunjuk untuk melihat nilai semua sel pada suatu siklus." />
+</section>
+
+<section class="chapter" id="relationships" aria-labelledby="relationships-h">
+  <div class="chapter-head"><p class="kicker">Langkah 7 · Analisis</p><h2 id="relationships-h">Pengukuran mana yang berubah bersama kesehatan baterai?</h2></div>
+  <p class="takeaway">Durasi pengisian dan puncak kurva pengisian paling sejalan dengan kesehatan baterai: &rho; {{rho_t_cc_min}} hingga {{rho_t_cc_max}} dan {{rho_dq_dv_peak_min}} hingga {{rho_dq_dv_peak_max}} di dalam masing-masing sel. Jeda antarpengosongan tidak menunjukkan pola yang sama.</p>
+  <div class="prose">
+    <p>Dua angka merangkum hubungan fitur dengan SoH. <span class="term" data-term="spearman">Spearman &rho;</span> melihat apakah keduanya cenderung naik bersama (positif), atau satu turun saat yang lain naik (negatif). <span class="term" data-term="pearson">Pearson r</span> melihat hal serupa khusus untuk hubungan berbentuk garis lurus. Keduanya bernilai antara &minus;1 dan +1.</p>
+  </div>
+  <fig id="scatter" title="Setiap fitur terhadap kesehatan baterai" sub="Satu titik untuk setiap siklus. Arahkan penunjuk atau fokuskan area dekat titik untuk mengenalinya." />
+  <fig id="rho" title="Spearman &rho; menurut baterai" sub="Hubungan yang sama dalam tabel, untuk setiap sel dan gabungan keempatnya." notwin />
+  <div class="prose">
+    <h3>Apa yang bisa dipahami?</h3>
+    <ol>
+      <li><b>t_cc dan dq_dv_peak paling layak diperiksa lebih lanjut.</b> Pada setiap sel, t_cc memiliki &rho; {{rho_t_cc_min}} hingga {{rho_t_cc_max}}, dan dq_dv_peak {{rho_dq_dv_peak_min}} hingga {{rho_dq_dv_peak_max}}. Ini menunjukkan hubungan pada sel-sel tersebut, belum membuktikan bahwa hubungan itu berlaku pada sel lain.</li>
+      <li><b>Keduanya membawa informasi yang tumpang tindih.</b> Besarnya dibahas pada bab 10.</li>
+      <li><b>t_cv dan tegangan puncak naik saat kesehatan baterai turun:</b> &rho; {{rho_t_cv_min}} hingga {{rho_t_cv_max}} dan {{rho_v_at_peak_min}} hingga {{rho_v_at_peak_max}} pada setiap sel. Anggap ini arah hubungan yang teramati, bukan arah yang boleh diasumsikan sejak awal.</li>
+      <li><b>Jeda antarpengosongan tidak konsisten:</b> &rho; {{rho_rest_time_hours_min}} hingga {{rho_rest_time_hours_max}}. Waktu pengisian ikut dihitung, sehingga hasil ini belum menunjukkan apakah waktu istirahat murni berpengaruh.</li>
+      <li><b>Kenaikan suhu, penurunan tegangan, dan resistansi berhubungan kuat dengan kesehatan di dalam setiap sel</b> (misalnya kenaikan suhu {{rho_delta_T_max_min}} hingga {{rho_delta_T_max_max}}), tetapi datanya direkam setelah pengisian berakhir.</li>
+    </ol>
+    <p>Untuk beberapa fitur, korelasi pada kolom gabungan lebih rendah karena mencampurkan perbedaan antarsel dengan perubahan di dalam satu sel.</p>
+  </div>
+</section>
+
+<section class="chapter" id="trend" aria-labelledby="trend-h">
+  <div class="chapter-head"><p class="kicker">Langkah 8 · Analisis</p><h2 id="trend-h">Apakah hubungan kuat itu berasal dari tren penuaan?</h2></div>
+  <p class="takeaway">Siklus yang berdekatan sangat mirip. Karena itu, sebagian korelasi yang kuat mencerminkan perubahan bersama akibat bertambahnya usia baterai.</p>
+  <p class="analogy"><b>Bayangkan begini.</b> Halaman buku yang berurutan berbagi konteks. Siklus yang berdekatan juga saling terkait; jumlahnya tidak setara dengan banyak baterai yang saling independen.</p>
+  <div class="prose"><p><span class="term" data-term="autocorr">Autokorelasi</span> membandingkan rangkaian data dengan rangkaian yang sama beberapa siklus kemudian. Mengganti nilai pengukuran dengan <em>perubahannya</em> dari siklus ke siklus menghilangkan sebagian besar tren bersama.</p></div>
+  <fig id="lag" title="Seberapa mirip satu siklus dengan siklus berikutnya?" sub="Korelasi antara pengukuran dan pengukuran yang sama beberapa siklus kemudian." />
+  <div class="prose"><p>Untuk kapasitas pada lag 1 (jarak satu siklus), korelasi nilai aslinya {{lag1_level_min}} hingga {{lag1_level_max}}, sedangkan korelasi perubahannya hanya {{lag1_diff_min}} hingga {{lag1_diff_max}}. Grafik berikut melakukan perbandingan serupa untuk setiap fitur terhadap kapasitas.</p></div>
+  <fig id="levels" title="Hubungan keseluruhan, setelah tren dikurangi, dan antarperubahan" sub="Tiga korelasi untuk setiap fitur. Tanda yang jauh dari dua lainnya menunjukkan bahwa angka keseluruhan banyak dipengaruhi tren." />
+  <div class="prose">
+    <p>Untuk t_cc, korelasi perubahannya turun menjadi {{chg_t_cc_min}} hingga {{chg_t_cc_max}}; untuk dq_dv_peak menjadi {{chg_dq_dv_peak_min}} hingga {{chg_dq_dv_peak_max}}. Setelah pengaruh yang dapat dijelaskan oleh nomor siklus dikurangi, urutan peringkatnya masih sejalan: {{adj_t_cc_min}} hingga {{adj_t_cc_max}} untuk t_cc dan {{adj_dq_dv_peak_min}} hingga {{adj_dq_dv_peak_max}} untuk dq_dv_peak. Jadi, sebagian hubungan kuat itu berasal dari tren bersama, dan sebagian yang lebih kecil tetap ada setelah penyesuaian. Ini adalah pemeriksaan yang berbeda, bukan bukti mekanisme sebab-akibat.</p>
+  </div>
+</section>
+
+<section class="chapter" id="curves" aria-labelledby="curves-h">
+  <div class="chapter-head"><p class="kicker">Langkah 9 · Analisis</p><h2 id="curves-h">Bisakah pola melengkung luput dari korelasi?</h2></div>
+  <p class="takeaway">Spearman hanya menangkap pola yang terus naik atau terus turun. Informasi bersama juga dapat menangkap pola melengkung. Pada data ini, keduanya mengarah pada temuan yang sejalan.</p>
+  <p class="analogy"><b>Bayangkan begini.</b> Jalan berbentuk U mula-mula menurun, lalu menanjak. Jika diringkas menjadi satu arah, keduanya saling meniadakan, meskipun bentuk jalannya jelas.</p>
+  <div class="prose"><p><span class="term" data-term="mi">Informasi bersama</span> atau mutual information (MI) mengukur seberapa banyak pengetahuan tentang satu besaran membantu mempersempit kemungkinan besaran lain, termasuk pada hubungan melengkung. Satuannya nat, tidak memiliki tanda positif atau negatif, dan bukan persentase.</p></div>
+  <fig id="mi" title="Pola yang luput dari Spearman, dan hasil pada data asli" sub="Kiri: data buatan untuk penjelasan. Kanan: hasil pengukuran." />
+</section>
+
+<section class="chapter" id="overlap" aria-labelledby="overlap-h">
+  <div class="chapter-head"><p class="kicker">Langkah 10 · Analisis</p><h2 id="overlap-h">Apakah fitur-fiturnya mengulang informasi yang sama?</h2></div>
+  <p class="takeaway">Keempat fitur pengisian banyak bertumpang tindih, sehingga bukan empat petunjuk yang saling independen.</p>
+  <p class="analogy"><b>Bayangkan begini.</b> Empat saksi yang saling mengulang bukanlah empat petunjuk independen. Nilai tumpang tindih yang tinggi memberi peringatan bahwa rumus garis lurus bisa kesulitan memisahkan kontribusi masing-masing.</p>
+  <div class="prose"><p><span class="term" data-term="vif">Faktor inflasi varians</span> (VIF) mengukur tumpang tindih tersebut untuk empat fitur pengisian. Di dalam setiap sel, hubungan t_cc dengan dq_dv_peak memiliki &rho; {{pair_tcc_dq_min}} hingga {{pair_tcc_dq_max}}.</p></div>
+  <fig id="vif" title="Tumpang tindih empat fitur pengisian" sub="Nilai 1 berarti fitur membawa informasi yang tidak dijelaskan tiga fitur lain; makin besar, makin banyak tumpang tindihnya." />
+  <div class="prose"><p>Peta berikut menampilkan kesembilan fitur, dengan fitur yang mirip diletakkan berdekatan.</p></div>
+  <fig id="featmap" title="Fitur mana yang berubah bersama?" sub="Spearman &rho; untuk setiap pasangan fitur." />
+  <p class="prose">VIF tinggi menunjukkan informasi berulang dan koefisien yang mudah berubah. Ini bukan perintah untuk menghapus fitur, dan analisis ini tidak menerapkan ambang penghapusan.</p>
+</section>
+
+<section class="chapter" id="clusters" aria-labelledby="clusters-h">
+  <div class="chapter-head"><p class="kicker">Langkah 11 · Analisis</p><h2 id="clusters-h">Apakah siklus membentuk kelompok yang mirip?</h2></div>
+  <p class="takeaway">Tiga kelompok (sebagai ilustrasi, bukan perkiraan jumlah kelompok sebenarnya) sebagian besar mengikuti usia baterai, tetapi juga mencampur sel. Satu kelompok hanya berisi B0006.</p>
+  <div class="prose">
+    <p>Pengelompokan hanya memakai sembilan fitur yang sudah distandardisasi, yaitu disetarakan skalanya. SoH, kapasitas, nomor siklus, dan ID baterai tidak menentukan kelompok; semuanya baru dipakai setelahnya untuk menjelaskan kelompok. Peta <span class="term" data-term="pca">komponen utama</span> merangkum sembilan angka ke dalam dua sumbu agar kelompok dapat digambar.</p>
+  </div>
+  <fig id="clusters" title="Peta siklus dengan data lengkap" sub="Setiap titik adalah satu siklus. Titik yang berdekatan memiliki nilai fitur yang mirip, dengan keterbatasan peta dua dimensi." />
+  <p class="prose">Jika dibagi menjadi tiga kelompok, ukurannya {{cluster_sizes}}. Dua kelompok mencampur beberapa sel, sedangkan kelompok ketiga hanya berisi B0006. Ini menggabungkan perubahan di dalam sel dengan perbedaan antarsel, sehingga tidak menetapkan kelas kesehatan baterai. <a href="clustering.html">Laporan pengelompokan lengkap</a> menyediakan pengelompokan ulang per sel dan pilihan hingga enam kelompok.</p>
+</section>
+
+<section class="chapter" id="coverage" aria-labelledby="coverage-h">
+  <div class="chapter-head"><p class="kicker">Langkah 12 · Analisis</p><h2 id="coverage-h">Apakah sel baru akan mirip dengan yang sudah diamati?</h2></div>
+  <p class="takeaway">Setiap sel mencakup rentang yang berbeda. Nilai pada usia akhir sering berada di luar rentang usia awal, sehingga apa yang dianggap sudah pernah terlihat bergantung pada tahap usia baterai.</p>
+  <p class="analogy"><b>Bayangkan begini.</b> Belajar dari tangki air kecil belum tentu mempersiapkan kita menghadapi tangki yang jauh lebih besar. Cakupan data menanyakan situasi apa saja yang benar-benar ada dalam pengamatan kita.</p>
+  <fig id="coverage" title="Rentang nilai menurut tahap usia baterai" sub="Sepertiga awal, tengah, dan akhir siklus setiap sel, dibandingkan dengan rentang pada sel-sel lain." />
+  <p class="prose">Nilai di luar rentang sel lain menunjukkan situasi yang belum tercakup oleh pengamatan tersebut. Ini bukan kesalahan prediksi yang terukur, dan penuaan memang dapat mengubah distribusi nilai.</p>
+</section>
+
+<section class="chapter" id="uncertainty" aria-labelledby="uncertainty-h">
+  <div class="chapter-head"><p class="kicker">Langkah 13 · Analisis</p><h2 id="uncertainty-h">Seberapa besar hubungan bisa berubah, dan kapan kita menahan kesimpulan?</h2></div>
+  <p class="takeaway">Dari {{unc_records}} kasus, {{unc_conditional}} mendapat rentang ketidakpastian eksploratif, sedangkan {{unc_skipped}} tidak ditampilkan rentangnya karena asumsi yang diperlukan meragukan.</p>
+  <p class="analogy"><b>Bayangkan begini.</b> Mengacak potongan paragraf, bukan kata satu per satu, mempertahankan sebagian konteks setempat. <span class="term" data-term="bootstrap">Bootstrap blok</span> mempertahankan siklus yang berdekatan dalam satu kelompok, tetapi tetap bergantung pada asumsi.</p>
+  <div class="prose"><p>Langkah ini mempelajari <em>perubahan</em> dari siklus ke siklus. Potongan pendek pasangan siklus yang berdekatan diambil ulang berkali-kali. Rentang 95% hanya dilaporkan jika pemeriksaannya lolos. Rentang yang tidak ditampilkan juga memberikan informasi: asumsi untuk kasus itu masih diragukan.</p></div>
+  <fig id="unc" title="Korelasi perubahan, beserta rentang jika syaratnya terpenuhi" sub="Satu baris untuk setiap fitur. Pilih panjang blok untuk melihat seberapa besar hasil bergantung pada pilihan itu." />
+</section>
+
+<!-- ===================================================== PART 3 -->
+<div class="part" id="part3"><p class="kicker">Bagian 3</p><p class="part-title">Membaca hasil dengan bijak</p></div>
+
+<section class="chapter" id="conclusions" aria-labelledby="conclusions-h">
+  <div class="chapter-head"><p class="kicker">Langkah 14 · Membaca hasil</p><h2 id="conclusions-h">Apa yang bisa disimpulkan, dan apa yang belum?</h2></div>
+  <p class="takeaway">Pada keempat sel ini, beberapa fitur sangat sejalan dengan kesehatan baterai. Analisis ini belum dapat menyatakan bahwa fitur tersebut akan berhasil pada sel baru atau dapat dipakai saat pengisian selesai.</p>
+  <div class="grid-2" style="margin:22px 0;gap:18px">
+    <div class="fig" style="margin:0"><h3 class="panel-title" style="margin-top:0"><span class="pill ok">&check; Didukung sebagai gambaran data</span></h3>
+      <ul>
+        <li>Durasi pengisian dan puncak kurva pengisian naik-turun sejalan dengan kesehatan baterai pada setiap sel.</li>
+        <li>Keempat fitur pengisian bertumpang tindih, sehingga bukan petunjuk yang saling independen.</li>
+        <li>Siklus yang berdekatan sangat mirip. Sebagian hubungan kuat berasal dari tren penuaan bersama.</li>
+        <li>Lima siklus memerlukan penanganan khusus, dan nilai yang hilang ditampilkan secara jelas.</li>
+        <li>Beberapa masukan bergantung pada informasi yang direkam setelah pengisian selesai.</li>
+      </ul></div>
+    <div class="fig" style="margin:0"><h3 class="panel-title" style="margin-top:0"><span class="pill warn">&cross; Belum didukung data</span></h3>
+      <ul>
+        <li>Bahwa suatu fitur dapat memprediksi kesehatan sel baru. Keempat sel telah diperiksa; tidak ada yang disisihkan sebagai data uji yang belum pernah dilihat.</li>
+        <li>Bahwa kenaikan suhu, penurunan tegangan, Re, atau Rct dapat digunakan saat pengisian selesai.</li>
+        <li>Bahwa jeda antarpengosongan memiliki pengaruh yang konsisten: arah hubungannya berbeda antarsel dan waktu pengisian ikut dihitung.</li>
+        <li>Pernyataan sebab-akibat atau peringkat fitur yang berlaku secara umum.</li>
+      </ul></div>
+  </div>
+  <div class="prose">
+    <h3>Sebelum melatih model</h3>
+    <ol>
+      <li>Periksa t_cc dan dq_dv_peak terhadap kurva mentahnya (penjelajah siklus pada bab 3 bisa menjadi awal).</li>
+      <li>Tentukan penanganan lima siklus bermasalah, lalu sesuaikan pemakaian fitur dengan waktu saat datanya benar-benar tersedia.</li>
+      <li>Definisikan waktu istirahat murni, terpisah dari jeda antarpengosongan.</li>
+      <li>Dapatkan data validasi baru: sel yang belum pernah dipakai untuk memilih fitur.</li>
+      <li>Sampai saat itu, tetap jelaskan semua hasil sebagai eksplorasi.</li>
+    </ol>
+    <p><a href="../../Code/app/README.md">Aplikasi</a> proyek menempatkan tampilan ini berdampingan dengan lima model dari repositori sumber. Tahap Model diawali catatan yang meneruskan batasan-batasan tersebut.</p>
+  </div>
+</section>
+
+<section class="chapter" id="appendix" aria-labelledby="appendix-h">
+  <div class="chapter-head"><p class="kicker">Lampiran</p><h2 id="appendix-h">Mengulang analisis, menelusuri sumber, dan memahami istilah</h2></div>
+  <div class="prose">
+    <h3>Mengulang analisis</h3>
+    <p>Jalankan dari folder utama proyek, memakai lingkungan Python dari <code>Code/app/requirements.txt</code>:</p>
+<pre class="fig" style="padding:14px 18px;overflow:auto;font-size:12.5px;line-height:1.6"><code>.venv/bin/python Code/analysis/run_eda.py
+.venv/bin/python Code/analysis/validate_data.py --self-test
+.venv/bin/python Code/analysis/techniques/autocorrelation.py
+.venv/bin/python Code/analysis/techniques/mutual_information.py
+.venv/bin/python Code/analysis/techniques/feature_overlap.py --self-test
+.venv/bin/python Code/analysis/techniques/coverage.py
+.venv/bin/python Code/analysis/techniques/uncertainty.py --self-test
+.venv/bin/python Code/analysis/clustering.py --self-test
+.venv/bin/python Code/analysis/explainer/build.py</code></pre>
+    <h3>Dari mana angka-angkanya berasal?</h3>
+  </div>
+  <div class="table-scroll">
+    <table class="data files wide">
+      <thead><tr><th scope="col">Bab</th><th scope="col">Berkas tersimpan yang dibaca</th></tr></thead>
+      <tbody>
+        <tr><td>1, 2</td><td><code>Reports/operations.csv</code>, <code>Reports/raw_cycle_audit.csv</code>, <code>source_manifest.json</code></td></tr>
+        <tr><td>3</td><td>Berkas mentah <code>.mat</code> melalui kode tetap <code>src</code>; <code>Reports/peak_bin_sensitivity.csv</code></td></tr>
+        <tr><td>4</td><td><code>Reports/feature_changes.csv</code>, <code>Reports/cycles_raw_extracted.csv</code>, <code>Reports/csv_reconstruction_checks.csv</code></td></tr>
+        <tr><td>5</td><td><code>Reports/data_contracts.json</code></td></tr>
+        <tr><td>6, 7</td><td><code>Reports/cycles_observed_flagged.csv</code>, <code>Reports/feature_target_correlations.csv</code>, <code>Reports/battery_summary.csv</code></td></tr>
+        <tr><td>8</td><td><code>Reports/learning/autocorrelation.json</code>, <code>Reports/temporal_diagnostics.csv</code></td></tr>
+        <tr><td>9</td><td><code>Reports/learning/mutual_information.json</code></td></tr>
+        <tr><td>10</td><td><code>Reports/learning/feature_overlap.json</code>, <code>Reports/clustering.json</code></td></tr>
+        <tr><td>11</td><td><code>Reports/cycle_clusters.csv</code>, <code>Reports/clustering.json</code></td></tr>
+        <tr><td>12</td><td><code>Reports/learning/coverage.json</code></td></tr>
+        <tr><td>13</td><td><code>Reports/learning/uncertainty.json</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <h3>Versi dan checksum</h3>
+    <ul id="versions"></ul>
+    <p><button type="button" class="btn" id="dl-csv">Unduh tabel pengamatan (CSV)</button> <span class="fig-note">Seluruh {{n_cycles}} baris; sel kosong menunjukkan nilai yang hilang; angka dibulatkan hingga enam angka desimal.</span></p>
+    <h3>Daftar istilah</h3>
+  </div>
+  <div id="glossary"></div>
+</section>
+
+</main>
+<footer>
+  Dibuat oleh <code>Code/analysis/explainer/build.py</code> dari hasil tersimpan dan data mentah yang versinya dikunci. Halaman ini berupa satu berkas dan tidak mengakses jaringan. Isinya adalah eksplorasi empat sel, bukan validasi model apa pun.
+</footer>
+</div>
+</div>
+<div id="tip" role="tooltip" hidden></div>
+<script>/*__DATA__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>

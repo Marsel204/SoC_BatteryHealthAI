@@ -1,0 +1,579 @@
+{
+  "source_commit": "043ec72936025ce59a3753b31c3c3a16e531df5a",
+  "reference_capacity_ah": 2.0,
+  "checks": [
+    {
+      "check": "source_checksums",
+      "category": "source",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Every raw/source file must match the pinned SHA-256 manifest.",
+      "examples": []
+    },
+    {
+      "check": "required_columns",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Required cycle-table fields must exist.",
+      "examples": []
+    },
+    {
+      "check": "battery_id_type",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Battery IDs must be nonempty strings.",
+      "examples": []
+    },
+    {
+      "check": "numeric_column_types",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Cycles, features, capacity and SoH must have numeric dtypes.",
+      "examples": []
+    },
+    {
+      "check": "quality_flag_type",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "charge_quality_flag must be boolean, not a string, number or missing value.",
+      "examples": []
+    },
+    {
+      "check": "unique_cycle_keys",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Each battery/cycle pair must identify exactly one row.",
+      "examples": []
+    },
+    {
+      "check": "positive_integer_cycle",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Cycle IDs must be finite positive integers.",
+      "examples": []
+    },
+    {
+      "check": "positive_finite_capacity",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Capacity must be finite and positive. Values above rated capacity are allowed.",
+      "examples": []
+    },
+    {
+      "check": "soh_matches_capacity",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "SoH must equal capacity / 2 Ah \u00d7 100 within numerical tolerance.",
+      "examples": []
+    },
+    {
+      "check": "missing_features_explained",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Only the four explicitly flagged charge features may be missing under this table policy.",
+      "examples": []
+    },
+    {
+      "check": "flagged_charge_values_masked",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "This observed-data version masks all four charge features for a flagged cycle.",
+      "examples": []
+    },
+    {
+      "check": "finite_present_features",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Present feature values must be finite; an explicit missing value is different from infinity.",
+      "examples": []
+    },
+    {
+      "check": "nonnegative_feature_values",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "These feature definitions produce nonnegative durations, resistances, rises, drops and peaks.",
+      "examples": []
+    },
+    {
+      "check": "documented_charge_quality_flags",
+      "category": "quality_exception",
+      "status": "warning",
+      "affected_count": 5,
+      "description": "Flagged observations remain in the table with missing charge features; no values are filled.",
+      "examples": [
+        {
+          "battery_id": "B0005",
+          "cycle": 31
+        },
+        {
+          "battery_id": "B0006",
+          "cycle": 31
+        },
+        {
+          "battery_id": "B0007",
+          "cycle": 31
+        },
+        {
+          "battery_id": "B0018",
+          "cycle": 46
+        },
+        {
+          "battery_id": "B0018",
+          "cycle": 56
+        }
+      ]
+    },
+    {
+      "check": "audit_cycle_links",
+      "category": "invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "The raw-cycle audit must have exactly one record for every aligned cycle.",
+      "examples": []
+    },
+    {
+      "check": "raw_waveform_arrays_nonempty",
+      "category": "raw_invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Every charge/discharge record must have time, voltage, current and temperature samples.",
+      "examples": []
+    },
+    {
+      "check": "raw_waveform_lengths",
+      "category": "raw_invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Time, voltage, current and temperature arrays must have matching lengths.",
+      "examples": []
+    },
+    {
+      "check": "raw_sample_times",
+      "category": "raw_invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Sample times must be finite and strictly increasing within each operation.",
+      "examples": []
+    },
+    {
+      "check": "selected_raw_signals_finite",
+      "category": "raw_invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Sensor samples in selected charge/discharge records must be finite.",
+      "examples": []
+    },
+    {
+      "check": "raw_operation_links",
+      "category": "raw_invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Aligned rows must reference the correct raw charge and discharge operation types.",
+      "examples": []
+    },
+    {
+      "check": "capacity_matches_raw_record",
+      "category": "raw_invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Cycle labels must agree with the raw discharge Capacity field.",
+      "examples": []
+    },
+    {
+      "check": "charge_finishes_before_discharge",
+      "category": "raw_invariant",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "The preceding charge must finish no later than discharge starts.",
+      "examples": []
+    },
+    {
+      "check": "unused_raw_nonfinite_samples",
+      "category": "quality_exception",
+      "status": "warning",
+      "affected_count": 6,
+      "description": "Unused raw operations are still audited and reported; their defects do not disappear because they are unselected.",
+      "examples": [
+        {
+          "battery_id": "B0018",
+          "operation_id": 114,
+          "type": "charge",
+          "used_by_aligned_cycle": false,
+          "nonfinite_sensor_values": 6,
+          "signal_length_mismatches": 0,
+          "invalid_time_values_or_steps": 0,
+          "empty_array": false
+        }
+      ]
+    },
+    {
+      "check": "aligned_cycles",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 632; observed: 632.",
+      "examples": []
+    },
+    {
+      "check": "batteries",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 4; observed: 4.",
+      "examples": []
+    },
+    {
+      "check": "quality_flagged_cycles",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 5; observed: 5.",
+      "examples": []
+    },
+    {
+      "check": "processed_feature_cells_changed_from_raw",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 15; observed: 15.",
+      "examples": []
+    },
+    {
+      "check": "flagged_peak_voltage_fallbacks",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 5; observed: 5.",
+      "examples": []
+    },
+    {
+      "check": "raw_discharge_records",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 636; observed: 636.",
+      "examples": []
+    },
+    {
+      "check": "eis_starts_after_charge_end",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 599; observed: 599.",
+      "examples": []
+    },
+    {
+      "check": "eis_starts_after_discharge_start",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 175; observed: 175.",
+      "examples": []
+    },
+    {
+      "check": "unused_nonfinite_sensor_values",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "Pinned snapshot expectation: 6; observed: 6.",
+      "examples": []
+    },
+    {
+      "check": "flagged_cycle_identities",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "The five snapshot charge-quality flags must match the documented cycle identities.",
+      "examples": []
+    },
+    {
+      "check": "screening_policy_lineage",
+      "category": "snapshot_expectation",
+      "status": "pass",
+      "affected_count": 0,
+      "description": "The current flags reproduce the source screening policy (raw t_cc < 100 s or dq_dv_peak < 0.1 Ah/V). These are inherited flags, not proven physical limits.",
+      "examples": []
+    }
+  ],
+  "snapshot": {
+    "aligned_cycles": 632,
+    "batteries": 4,
+    "quality_flagged_cycles": 5,
+    "processed_feature_cells_changed_from_raw": 15,
+    "flagged_peak_voltage_fallbacks": 5,
+    "raw_discharge_records": 636,
+    "eis_starts_after_charge_end": 599,
+    "eis_starts_after_discharge_start": 175,
+    "unused_nonfinite_sensor_values": 6
+  },
+  "raw_metadata": {
+    "total_raw_operations": 2167,
+    "sampled_charge_discharge_operations": 1280,
+    "raw_discharge_records": 636,
+    "selected_charge_discharge_operations": 1261,
+    "selected_nonfinite_sensor_values": 0,
+    "unused_nonfinite_sensor_values": 6,
+    "raw_array_issues": [
+      {
+        "battery_id": "B0018",
+        "operation_id": 114,
+        "type": "charge",
+        "used_by_aligned_cycle": false,
+        "nonfinite_sensor_values": 6,
+        "signal_length_mismatches": 0,
+        "invalid_time_values_or_steps": 0,
+        "empty_array": false
+      }
+    ]
+  },
+  "availability": [
+    {
+      "scenario": "end_of_charge",
+      "feature": "t_cc",
+      "total_cycles": 632,
+      "available_and_observed_count": 627,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 5,
+      "status": "requires_handling",
+      "reason": "Charge recording is complete at both hypothetical moments. Five flagged cycles lack an accepted observed charge feature."
+    },
+    {
+      "scenario": "end_of_charge",
+      "feature": "t_cv",
+      "total_cycles": 632,
+      "available_and_observed_count": 627,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 5,
+      "status": "requires_handling",
+      "reason": "Charge recording is complete at both hypothetical moments. Five flagged cycles lack an accepted observed charge feature."
+    },
+    {
+      "scenario": "end_of_charge",
+      "feature": "dq_dv_peak",
+      "total_cycles": 632,
+      "available_and_observed_count": 627,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 5,
+      "status": "requires_handling",
+      "reason": "Charge recording is complete at both hypothetical moments. Five flagged cycles lack an accepted observed charge feature."
+    },
+    {
+      "scenario": "end_of_charge",
+      "feature": "v_at_peak",
+      "total_cycles": 632,
+      "available_and_observed_count": 627,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 5,
+      "status": "requires_handling",
+      "reason": "Charge recording is complete at both hypothetical moments. Five flagged cycles lack an accepted observed charge feature."
+    },
+    {
+      "scenario": "end_of_charge",
+      "feature": "delta_T_max",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 632,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "The maximum temperature rise requires the complete discharge recording."
+    },
+    {
+      "scenario": "end_of_charge",
+      "feature": "delta_V_ohmic",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 632,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "The initial voltage-drop calculation requires samples through the first discharge load step."
+    },
+    {
+      "scenario": "end_of_charge",
+      "feature": "Re",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 599,
+      "completion_unknown_count": 33,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "A future sweep start proves unavailability. A past start alone cannot establish completion; end timestamps are missing."
+    },
+    {
+      "scenario": "end_of_charge",
+      "feature": "Rct",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 599,
+      "completion_unknown_count": 33,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "A future sweep start proves unavailability. A past start alone cannot establish completion; end timestamps are missing."
+    },
+    {
+      "scenario": "end_of_charge",
+      "feature": "rest_time_hours",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 632,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "The current interval feature ends at discharge start and includes intervening charging; its exact value is not known at charge completion."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "t_cc",
+      "total_cycles": 632,
+      "available_and_observed_count": 627,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 5,
+      "status": "requires_handling",
+      "reason": "Charge recording is complete at both hypothetical moments. Five flagged cycles lack an accepted observed charge feature."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "t_cv",
+      "total_cycles": 632,
+      "available_and_observed_count": 627,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 5,
+      "status": "requires_handling",
+      "reason": "Charge recording is complete at both hypothetical moments. Five flagged cycles lack an accepted observed charge feature."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "dq_dv_peak",
+      "total_cycles": 632,
+      "available_and_observed_count": 627,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 5,
+      "status": "requires_handling",
+      "reason": "Charge recording is complete at both hypothetical moments. Five flagged cycles lack an accepted observed charge feature."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "v_at_peak",
+      "total_cycles": 632,
+      "available_and_observed_count": 627,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 5,
+      "status": "requires_handling",
+      "reason": "Charge recording is complete at both hypothetical moments. Five flagged cycles lack an accepted observed charge feature."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "delta_T_max",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 632,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "The maximum temperature rise requires the complete discharge recording."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "delta_V_ohmic",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 632,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "The initial voltage-drop calculation requires samples through the first discharge load step."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "Re",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 175,
+      "completion_unknown_count": 457,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "A future sweep start proves unavailability. A past start alone cannot establish completion; end timestamps are missing."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "Rct",
+      "total_cycles": 632,
+      "available_and_observed_count": 0,
+      "starts_or_finishes_after_cutoff_count": 175,
+      "completion_unknown_count": 457,
+      "quality_flagged_count": 0,
+      "status": "requires_handling",
+      "reason": "A future sweep start proves unavailability. A past start alone cannot establish completion; end timestamps are missing."
+    },
+    {
+      "scenario": "discharge_start",
+      "feature": "rest_time_hours",
+      "total_cycles": 632,
+      "available_and_observed_count": 632,
+      "starts_or_finishes_after_cutoff_count": 0,
+      "completion_unknown_count": 0,
+      "quality_flagged_count": 0,
+      "status": "available",
+      "reason": "The current interval feature ends at discharge start and includes intervening charging; its exact value is not known at charge completion."
+    }
+  ],
+  "mutation_tests": [
+    {
+      "case": "duplicate_cycle",
+      "expected_failure": "unique_cycle_keys",
+      "detected": true
+    },
+    {
+      "case": "inconsistent_soh",
+      "expected_failure": "soh_matches_capacity",
+      "detected": true
+    },
+    {
+      "case": "negative_capacity",
+      "expected_failure": "positive_finite_capacity",
+      "detected": true
+    },
+    {
+      "case": "unflagged_missing_feature",
+      "expected_failure": "missing_features_explained",
+      "detected": true
+    },
+    {
+      "case": "string_quality_flags",
+      "expected_failure": "quality_flag_type",
+      "detected": true
+    },
+    {
+      "case": "missing_required_field",
+      "expected_failure": "required_columns",
+      "detected": true
+    }
+  ],
+  "scenario_requested": null,
+  "notes": [
+    "No data values were changed.",
+    "Hypothetical cutoffs do not establish a user-selected deployment objective.",
+    "Past EIS start timestamps do not establish sweep completion."
+  ]
+}
