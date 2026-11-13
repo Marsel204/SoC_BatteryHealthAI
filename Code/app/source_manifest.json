@@ -14,7 +14,7 @@
       "local_path": "Code/app/server/api.py",
       "upstream_sha256": "ee0a5a4ff44df544d31e202000f8956e3fd321e2676b9d382aea891ffdea8347",
       "modified": true,
-      "changes": "package-relative imports; paths from server/paths.py; missing pinned CSV is an error; data-analysis router; legacy HTML redirects into /Web/HTML; read-only Reports and learning mounts; revalidation header"
+      "changes": "package-relative imports; paths from server/paths.py; missing pinned CSV is an error; data-analysis router; legacy HTML redirects into /Web/HTML; read-only Reports and learning mounts; revalidation header; persist and reload fitted models and scalers in Model/"
     },
     {
       "upstream_path": "src/static/index.html",

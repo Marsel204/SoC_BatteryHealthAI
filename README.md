@@ -128,3 +128,11 @@ python run_pipeline.py
 # 4. Start the interactive testing web UI
 python app.py --port 8000
 ```
+
+## Saved models for the combined app
+
+The combined Data analysis → Model app loads five fitted models and their scalers
+from [`Model/`](Model/README.md). Missing, damaged, or outdated artifacts are trained
+and saved automatically. Run `.venv/bin/python Code/app/run.py` to start the app,
+or `.venv/bin/python Code/app/train_models.py` to regenerate all five artifacts.
+Setup instructions are in [Code/README.md](Code/README.md).

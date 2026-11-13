@@ -1,0 +1,58 @@
+{
+  "signature": {
+    "format_version": 1,
+    "training_data_sha256": "bec51471a2329bbba47cda71837cfffa5de6f20e784d979318d1089483b29b4e",
+    "model_code_sha256": "69cec528bf3fd01dbb67f6a2cca11831facce2055e84fdff15c292ef4b6199a9",
+    "features": [
+      "t_cc",
+      "t_cv",
+      "dq_dv_peak",
+      "v_at_peak",
+      "delta_T_max",
+      "delta_V_ohmic",
+      "Re",
+      "Rct",
+      "rest_time_hours"
+    ],
+    "target": "soh",
+    "versions": {
+      "numpy": "2.5.4",
+      "pandas": "3.1.0",
+      "scipy": "1.18.1",
+      "scikit-learn": "1.9.1",
+      "joblib": "1.6.0",
+      "python": "3.13.12",
+      "xgboost": "3.4.1"
+    }
+  },
+  "trained_at_utc": "2026-11-13T08:09:52.630503+00:00",
+  "training_rows": 632,
+  "batteries": [
+    "B0005",
+    "B0006",
+    "B0007",
+    "B0018"
+  ],
+  "models": {
+    "Ridge": {
+      "file": "ridge.joblib",
+      "sha256": "efc9eb43f8d13b28a5cff24db143ad9bfedc4300065d359fccf5173734d22f78"
+    },
+    "ElasticNet": {
+      "file": "elasticnet.joblib",
+      "sha256": "11f8e9f7b6ec2c4a7394aade871fec1fc2a6f1ab0df2182636cfe8dd9178f493"
+    },
+    "SVR": {
+      "file": "svr.joblib",
+      "sha256": "875b88d5c434cc54642b192c8a7976e70288f6889ff55bc7d716b94fa7ae54db"
+    },
+    "GPR": {
+      "file": "gpr.joblib",
+      "sha256": "ca73befd2c651321a48f7cec9529f8cb027c16525c0f2ddd3d9e4be271da1111"
+    },
+    "XGBoost": {
+      "file": "xgboost.joblib",
+      "sha256": "2e776e6e6d177ecf7c54b20c59166ac4cede490d438cedd3d8a2da1a0f154d19"
+    }
+  }
+}

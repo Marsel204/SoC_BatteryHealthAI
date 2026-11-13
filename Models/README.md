@@ -13,9 +13,12 @@ is unchanged from repository commit `043ec72936025ce59a3753b31c3c3a16e531df5a`.
 | Gaussian process | `GaussianProcessModel` | StandardScaler; constant × Matérn 5/2 + white-noise kernel |
 | XGBoost | `XGBoostModel` | StandardScaler; 120 trees, depth 3, learning rate 0.05 |
 
-There are no serialized pretrained weights in this package. The app fits these
-models at startup from [the existing processed table](../data/features_all_batteries.csv).
-Run it with the commands in [Code/README.md](../Code/README.md).
+The fitted models and their scalers are included in [`Model/`](../Model/README.md)
+as five `.joblib` files, trained on [the existing processed table](../data/features_all_batteries.csv).
+The combined app loads them at startup and refreshes missing, damaged, or outdated
+artifacts. The manifest records feature order, data and code checksums, and dependency versions.
+Run the app with the commands in [Code/README.md](../Code/README.md), or explicitly
+retrain with `.venv/bin/python Code/app/train_models.py`.
 
 ## Evaluation
 

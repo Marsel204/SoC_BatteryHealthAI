@@ -1,0 +1,2 @@
+# Preserve serialized model bytes and display them as binary artifacts.
+/Model/*.joblib binary

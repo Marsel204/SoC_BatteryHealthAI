@@ -11,6 +11,7 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = APP_DIR.parents[1]
 ANALYSIS_DIR = PROJECT_ROOT / "Code" / "analysis"
+MODEL_DIR = PROJECT_ROOT / "Model"
 
 # Pinned snapshot of the upstream SoC_BatteryHealthAI repository (see source_manifest.json).
 SOURCE_DIR = PROJECT_ROOT
