@@ -1,0 +1,117 @@
+{
+  "repository": "https://github.com/Marsel204/SoC_BatteryHealthAI",
+  "commit": "043ec72936025ce59a3753b31c3c3a16e531df5a",
+  "note": "Files copied from the upstream repository at this commit. Original root data/ and src/ provide the checksummed CSV, loader and extractor. Numerical outputs live in Reports/; report HTML in Web/HTML/. See ../analysis/source_manifest.json.",
+  "files": [
+    {
+      "upstream_path": "src/models.py",
+      "local_path": "Code/app/server/models.py",
+      "upstream_sha256": "69cec528bf3fd01dbb67f6a2cca11831facce2055e84fdff15c292ef4b6199a9",
+      "modified": false
+    },
+    {
+      "upstream_path": "src/api.py",
+      "local_path": "Code/app/server/api.py",
+      "upstream_sha256": "ee0a5a4ff44df544d31e202000f8956e3fd321e2676b9d382aea891ffdea8347",
+      "modified": true,
+      "changes": "package-relative imports; paths from server/paths.py; missing pinned CSV is an error; data-analysis router; legacy HTML redirects into /Web/HTML; read-only Reports and learning mounts; revalidation header"
+    },
+    {
+      "upstream_path": "src/static/index.html",
+      "local_path": "Code/app/static/index.html",
+      "upstream_sha256": "6fa4e4b98e83c0aca3a0c5658998a5932b656147965d114b9fbc6b0f33ff7eab",
+      "modified": true,
+      "changes": "two-step Data analysis / Model navigation, new Data analysis views, carry-over panel, hand-off button, stylesheet and script tags, favicon"
+    },
+    {
+      "upstream_path": "src/static/app.js",
+      "local_path": "Code/app/static/app.js",
+      "upstream_sha256": "dd592cecff51018f4f0efa4f1735e67848500b616dddc596ab5cff42a4964d91",
+      "modified": true,
+      "changes": "setupTabs replaced by group-aware activateTab (hash routing, AppNav, tabchange event); everything else unchanged"
+    },
+    {
+      "upstream_path": "src/static/style.css",
+      "local_path": "Code/app/static/style.css",
+      "upstream_sha256": "cb91f47605e30ebbee225b31ad20f4c47b23217b3757af20e80aba0d8cb95772",
+      "modified": false
+    },
+    {
+      "upstream_path": "app.py",
+      "local_path": "Code/app/run.py",
+      "upstream_sha256": "7710eb420be9fd2ace8dfc3f5a92bc21d9ae019ebad073b111039c07e1f2958e",
+      "modified": true,
+      "changes": "adapted launcher: new import string, app_dir, input check, default port 8010; Code/analysis reproduction paths"
+    },
+    {
+      "upstream_path": "pytest.ini",
+      "local_path": "Code/app/pytest.ini",
+      "upstream_sha256": "19f27bd8b004cabc75895d1b58ccf789ef80e9d248d6ab03d68c97ec4d41ac6d",
+      "modified": false
+    },
+    {
+      "upstream_path": "tests/test_api.py",
+      "local_path": "Code/app/tests/test_api.py",
+      "upstream_sha256": "3d26b2980c943a45a592dcef62ae00c33cfec59b22ecf0702f5739fbdd5ef871",
+      "modified": true,
+      "changes": "import path only"
+    },
+    {
+      "upstream_path": "tests/test_models.py",
+      "local_path": "Code/app/tests/test_models.py",
+      "upstream_sha256": "a9acea915c130ad96952f63048fbd3bd3c96c17d87700f789d8b0b62d2305a4d",
+      "modified": true,
+      "changes": "import path only"
+    },
+    {
+      "upstream_path": "tests/test_data_loader.py",
+      "local_path": "Code/app/tests/test_data_loader.py",
+      "upstream_sha256": "2043be1222ffad28bd5f1ed67cdd9972b8162599bc57f56dc54214b45c2502b2",
+      "modified": true,
+      "changes": "raw-data path points at the pinned snapshot"
+    },
+    {
+      "upstream_path": "tests/test_feature_engineering.py",
+      "local_path": "Code/app/tests/test_feature_engineering.py",
+      "upstream_sha256": "2a6e589634b895d0e93071ff8337ff3182f9f9b93f8bf6ed0d2041aec7991586",
+      "modified": true,
+      "changes": "raw-data path points at the pinned snapshot"
+    },
+    {
+      "upstream_path": "outputs/figures/stage1_degradation_regeneration.png",
+      "local_path": "outputs/figures/stage1_degradation_regeneration.png",
+      "upstream_sha256": "503ca602404b8e3d2398e17d57f404f64d882520184561c60f6de16005a97a2a",
+      "modified": false
+    },
+    {
+      "upstream_path": "outputs/figures/stage1_incremental_capacity_evolution.png",
+      "local_path": "outputs/figures/stage1_incremental_capacity_evolution.png",
+      "upstream_sha256": "fad022bfed06488d7c8185e9a5a7926f33ad44c0bc3e276581bfc453b52ee257",
+      "modified": false
+    },
+    {
+      "upstream_path": "outputs/figures/stage3_lobo_predictions_uncertainty.png",
+      "local_path": "outputs/figures/stage3_lobo_predictions_uncertainty.png",
+      "upstream_sha256": "fff233992831d14573cac1a35e55506d92615084010dc3ac9f790f58b8cf93ae",
+      "modified": false
+    },
+    {
+      "upstream_path": "outputs/figures/stage4_interpretability_shap_jacobian.png",
+      "local_path": "outputs/figures/stage4_interpretability_shap_jacobian.png",
+      "upstream_sha256": "3f58ab3e54e8cac56b7fbb7871420a3842b426846b09b459cb3c29c20f0dc2d8",
+      "modified": false
+    },
+    {
+      "upstream_path": "outputs/figures/stage4_joule_heating_law.png",
+      "local_path": "outputs/figures/stage4_joule_heating_law.png",
+      "upstream_sha256": "4a192fa5ac2016277e5ae6610ba3926f04ad6a67b52d2b6bd40c9448850f7e0e",
+      "modified": false
+    },
+    {
+      "upstream_path": "outputs/figures/stage4_thevenin_charging_dynamics.png",
+      "local_path": "outputs/figures/stage4_thevenin_charging_dynamics.png",
+      "upstream_sha256": "29c4c25a962201c8bc845241fd7967882405aa7d11b3fb95b61a88bb7b269c3c",
+      "modified": false
+    }
+  ]
+}

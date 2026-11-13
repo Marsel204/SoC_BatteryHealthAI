@@ -1,0 +1,60 @@
+{
+  "repository": "https://github.com/Marsel204/SoC_BatteryHealthAI",
+  "commit": "043ec72936025ce59a3753b31c3c3a16e531df5a",
+  "files": [
+    {
+      "path": "data/features_all_batteries.csv",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/data/features_all_batteries.csv",
+      "bytes": 127739,
+      "sha256": "bec51471a2329bbba47cda71837cfffa5de6f20e784d979318d1089483b29b4e"
+    },
+    {
+      "path": "src/data_loader.py",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/src/data_loader.py",
+      "bytes": 8451,
+      "sha256": "a8457924e39bcb628b3a5305b2fd413102d1820b533c7e71641f64a7f17bf5b6"
+    },
+    {
+      "path": "src/feature_engineering.py",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/src/feature_engineering.py",
+      "bytes": 8032,
+      "sha256": "03348a862d65ca893f9229b1a17f51b87d9500273c68ee4ec9cb148bb97070cb"
+    },
+    {
+      "path": "run_pipeline.py",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/run_pipeline.py",
+      "bytes": 6102,
+      "sha256": "9ace4cb62f92f10127b29c8f3e4aa2608423c660227bbc99ea434c7edf2fcafb"
+    },
+    {
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/README.md",
+      "bytes": 7569,
+      "sha256": "729cc840a558f2479ccea9f2637f8aea050e556f352f451e5103b8aefcc1bf8d"
+    },
+    {
+      "path": "data/raw/B0005.mat",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/data/raw/B0005.mat",
+      "bytes": 15956874,
+      "sha256": "0eae4585baf3f200c09fe24c5ab884f1889679fc75206ca1aa19da704104f0b0"
+    },
+    {
+      "path": "data/raw/B0006.mat",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/data/raw/B0006.mat",
+      "bytes": 16028159,
+      "sha256": "fa818ab4db5db8ab21e910b6dd6c3e20d3761bb9672089e1a4de8f96074616c5"
+    },
+    {
+      "path": "data/raw/B0007.mat",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/data/raw/B0007.mat",
+      "bytes": 16049460,
+      "sha256": "d022afa086efaf54ab5b63f05220f5be178c8027e2fa8d68589db0e85a441a3b"
+    },
+    {
+      "path": "data/raw/B0018.mat",
+      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/data/raw/B0018.mat",
+      "bytes": 8502218,
+      "sha256": "d1e6c923a43ea1c9666b3a90bbb521757a067fd60b4d17dbfaa49c50b179da69"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+# PNGs are the published report figures. Builders may also produce SVG copies locally.
+figures/*.svg
+clustering_verification.json

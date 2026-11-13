@@ -1,0 +1,22 @@
+{
+  "source_commit": "043ec72936025ce59a3753b31c3c3a16e531df5a",
+  "implementation": "Code/app/server/models.py",
+  "serialized_weights_included": false,
+  "fit_at_app_startup": true,
+  "training_table": "data/features_all_batteries.csv",
+  "target": {"column": "soh", "definition": "capacity / 2 Ah * 100", "unit": "%"},
+  "feature_order": ["t_cc", "t_cv", "dq_dv_peak", "v_at_peak", "delta_T_max", "delta_V_ohmic", "Re", "Rct", "rest_time_hours"],
+  "models": [
+    {"name": "Ridge", "class": "RidgeBaseline"},
+    {"name": "ElasticNet", "class": "ElasticNetBaseline"},
+    {"name": "SVR", "class": "SVRBaseline"},
+    {"name": "GPR", "class": "GaussianProcessModel"},
+    {"name": "XGBoost", "class": "XGBoostModel"}
+  ],
+  "evaluation": {
+    "scheme": "leave-one-battery-out",
+    "batteries": ["B0005", "B0006", "B0007", "B0018"],
+    "interpretation": "Exploratory development estimates; no untouched final holdout",
+    "prediction_timing": "Retrospective: some features require discharge or later impedance data"
+  }
+}

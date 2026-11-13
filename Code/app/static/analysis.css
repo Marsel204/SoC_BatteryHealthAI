@@ -1,0 +1,485 @@
+/* Data analysis -> Model additions. Built on the tokens and components in style.css. */
+
+/* ---- Workflow navigation ------------------------------------------------------------ */
+.primary-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.32rem 0.95rem 0.32rem 0.38rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.primary-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+}
+
+.primary-btn.active {
+  color: #fff;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.primary-btn:focus-visible,
+.segment-btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.primary-step {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.primary-btn.active .primary-step {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.primary-arrow {
+  color: var(--text-tertiary);
+}
+
+.subnav-bar {
+  position: sticky;
+  top: var(--header-h, 57px);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1.5rem;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
+.subnav-link {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a.subnav-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+/* Author display rules would otherwise defeat the [hidden] attribute. */
+.segment-btn[hidden],
+[data-show-group][hidden] {
+  display: none !important;
+}
+
+/* ---- Feature relationships ---------------------------------------------------------- */
+.analysis-lead {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 0.8rem;
+}
+
+.analysis-lead strong {
+  color: var(--text-primary);
+}
+
+.analysis-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.4rem;
+}
+
+.analysis-controls .control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.analysis-controls .preset-title {
+  margin-right: 0;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.95rem;
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.rho-table,
+.bridge-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.rho-table th,
+.rho-table td,
+.bridge-table th,
+.bridge-table td {
+  padding: 0.42rem 0.65rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.rho-table th:first-child,
+.rho-table td:first-child,
+.bridge-table th:first-child,
+.bridge-table td:first-child {
+  text-align: left;
+}
+
+/* Sentence case: uppercasing would turn the Greek rho in these headings into a capital Rho,
+   which is indistinguishable from the Latin P. */
+.rho-table th,
+.bridge-table th {
+  color: var(--text-tertiary);
+  font-weight: 600;
+  font-size: 0.74rem;
+}
+
+.rho-table .feat,
+.bridge-table .feat {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.rho-table .feat small,
+.bridge-table .feat small {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.rho-table td.rho,
+.bridge-table td.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.rho-table th.col-selected,
+.rho-table td.col-selected {
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+.plots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.15rem;
+}
+
+.plot-card {
+  min-width: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.85rem 0.9rem 0.55rem;
+}
+
+.plot-card h3 {
+  margin: 0 0 0.15rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.plot-stat {
+  margin-bottom: 0.35rem;
+  font: 0.72rem/1.5 var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+.plot-card svg {
+  width: 100%;
+  height: 205px;
+  display: block;
+  overflow: visible;
+}
+
+.plot-card svg text {
+  fill: var(--text-tertiary);
+  font: 11px var(--font-sans);
+}
+
+.analysis-footnote {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.analysis-footnote p {
+  margin: 0 0 0.6rem;
+}
+
+.analysis-footnote summary {
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.analysis-note {
+  margin: 0.65rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.load-error {
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--status-critical-border);
+  background: var(--status-critical-bg);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+/* ---- Embedded reports --------------------------------------------------------------- */
+.embed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.85rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.embed-bar .muted {
+  color: var(--text-tertiary);
+}
+
+.embed-frame {
+  display: block;
+  width: 100%;
+  height: calc(100vh - var(--header-h, 57px) - 150px);
+  min-height: 520px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  /* The reports follow the embedding element's colour scheme. */
+  color-scheme: dark;
+}
+
+/* ---- Data analysis -> Model hand-off ------------------------------------------------- */
+.next-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.next-step strong {
+  color: var(--text-primary);
+}
+
+.carryover {
+  margin-bottom: 1.15rem;
+  background: var(--status-caution-bg);
+  border: 1px solid var(--status-caution-border);
+  border-radius: 10px;
+}
+
+.carryover summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.65rem;
+  padding: 0.65rem 0.95rem;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.carryover summary::-webkit-details-marker {
+  display: none;
+}
+
+.carryover summary::after {
+  content: "Show";
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.carryover details[open] summary::after {
+  content: "Hide";
+}
+
+.carryover-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-caution);
+}
+
+.carryover-count,
+.carryover-hint {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.carryover-body {
+  padding: 0.2rem 0.95rem 0.95rem;
+}
+
+.carryover-list {
+  margin: 0.2rem 0 1rem 1.1rem;
+  padding: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.carryover-list li {
+  margin: 0.5rem 0;
+  max-width: 96ch;
+}
+
+.carryover-list strong {
+  color: var(--text-primary);
+}
+
+.dir-agrees {
+  color: var(--status-nominal);
+}
+
+.dir-opposite {
+  color: var(--status-caution);
+}
+
+.dir-unclear,
+.timing-unconfirmed {
+  color: var(--text-tertiary);
+}
+
+.timing-known {
+  color: var(--status-nominal);
+}
+
+.timing-later {
+  color: var(--status-caution);
+}
+
+/* ---- Responsive header -------------------------------------------------------------- */
+/* Upstream pins the brand and actions to their full width; with the two-step switch the
+   header row needs about 1310px, so drop the secondary brand text before it overflows. */
+@media (max-width: 1320px) {
+  .brand-divider,
+  .brand-subtitle,
+  .brand-pill {
+    display: none;
+  }
+}
+
+@media (max-width: 1040px) {
+  /* A wrapped header is tall: let it scroll away and keep only the view tabs pinned. */
+  .app-header {
+    position: static;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+    padding: 0.55rem 1rem;
+  }
+
+  .subnav-bar {
+    top: 0;
+  }
+
+  .header-brand,
+  .header-actions {
+    flex-shrink: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .subnav-bar {
+    padding: 0.5rem 1rem;
+  }
+
+  .legend {
+    margin-left: 0;
+  }
+}
+
+/* Long display equations scroll inside their own box instead of widening the page. */
+.katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* KaTeX's hidden MathML copy is absolutely positioned; a positioned scroller clips it. */
+  position: relative;
+}
+
+/* Upstream's methodology grids use 1fr columns that cannot shrink below their content. On narrow
+   screens let that one view scroll within itself rather than widening the whole page. */
+@media (max-width: 860px) {
+  #tab-methodology {
+    position: relative;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .status-badge {
+    display: none;
+  }
+
+  .plots-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .main-viewport {
+    padding: 1rem;
+  }
+}

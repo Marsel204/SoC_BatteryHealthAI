@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Battery relationships through clustering</title>
+<style>
+:root{color-scheme:light dark;--foreground:light-dark(#17212b,#e6eaf0);--muted:light-dark(#52616e,#a6b2c0);--border:light-dark(#d7dfe6,#3e4a58);--card:light-dark(#ffffff,#202a35);--secondary:light-dark(#eff3f7,#273442);--ring:light-dark(#2671bb,#8cc1ff);--primary:light-dark(#185d9e,#9ccaff);--chart-1:#2567b6;--chart-2:#ab501a;--chart-3:#267965;--chart-4:#8154a9;--chart-5:#ab3970;--chart-6:#72742a;--radius:8px;--font-sans:system-ui,sans-serif;--font-mono:ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;color:var(--foreground);font:14px/1.55 var(--font-sans);font-variant-numeric:tabular-nums}main{max-width:1120px;margin:0 auto}p{margin:0 0 12px;max-width:76ch}a{color:var(--primary);text-underline-offset:3px}h2{font-size:19px;line-height:1.3;font-weight:650;margin:0 0 8px;text-wrap:balance}h3{font-size:15px;margin:0 0 8px;font-weight:650}small,.muted,.note{color:var(--muted)}.note{font-size:12px;max-width:90ch}.tabs{display:flex;gap:8px;border-bottom:1px solid var(--border);padding-bottom:10px;margin:16px 0}.tabs button[aria-selected=true]{color:var(--primary);background:var(--secondary);border-color:var(--ring)}button,select{font:inherit;color:var(--foreground);background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;min-height:38px}button{cursor:pointer}button:hover,select:hover{border-color:var(--ring)}button:disabled{opacity:.6;cursor:default}button:active{background:var(--secondary)}:focus-visible{outline:2px solid var(--ring);outline-offset:3px}input{accent-color:var(--primary);width:16px;height:16px}::selection{color:var(--card);background:var(--foreground)}.controls{display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px 16px;margin:14px 0}.controls label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}.controls select{font-size:14px}.controls .check{flex-direction:row;align-items:center;gap:7px;min-height:38px;font-weight:400;font-size:13px}.controls .download{margin-left:auto;font-size:12px}section{margin:22px 0 0}.legend{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;font-size:12px;margin:4px 0 8px}.legend span{display:inline-flex;align-items:center;gap:6px}.dot{width:9px;height:9px;border-radius:50%;display:inline-block}.gradient{width:96px;height:9px;background:linear-gradient(90deg,var(--chart-1),var(--chart-2));border-radius:2px}.cycle-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}.plot svg{display:block;width:100%;height:300px}svg text{font-family:var(--font-sans);fill:var(--muted);font-size:11px}svg .point{cursor:pointer}svg .point:hover{stroke:var(--foreground);stroke-width:1.5;opacity:1}.table-scroll,.chart-scroll{overflow-x:auto;scrollbar-color:var(--border) transparent;scrollbar-width:thin;max-width:100%}table{border-collapse:collapse;width:100%;font-size:12px}th,td{padding:9px 8px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}th{color:var(--muted);font-size:11px;font-weight:600}td button{border:0;padding:0;min-height:30px;background:transparent;font-weight:650;white-space:nowrap}td button[aria-pressed=true]{text-decoration:underline;text-underline-offset:4px}td small{display:block;font-size:11px}.count{text-align:right}.profile svg{width:100%;min-width:590px;height:210px;display:block}.feature-chart svg{width:100%;min-width:560px;height:470px;display:block}.pair-detail{background:var(--secondary);border-radius:var(--radius);padding:12px 16px;margin-top:12px;min-height:62px;font-size:13px}.group-members{display:grid;gap:7px;margin:12px 0}.group-members p{font-size:13px;margin:0}.group-members strong{margin-right:7px}.group-line{width:10px;height:10px;display:inline-block;border-radius:2px;margin-right:6px}.reading{border-top:1px solid var(--border);padding-top:16px;margin-top:22px}.scores{display:flex;flex-wrap:wrap;gap:7px 16px;margin:8px 0;font-size:12px}.scores button{padding:4px 8px;font-size:12px;min-height:31px}.scores button[aria-pressed=true]{border-color:var(--ring);background:var(--secondary)}details{margin:14px 0;color:var(--muted);font-size:12px}summary{cursor:pointer;color:var(--foreground);padding:5px 0}details p{margin:8px 0}details li{margin-bottom:8px}ul{padding-left:19px}.readout{font-size:12px;color:var(--muted);min-height:37px;margin:6px 0}.inspect{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:6px}.inspect select{font-size:12px;padding:5px;max-width:220px}.dictionary{min-width:460px}.footer{font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding:14px 0;margin-top:22px}[hidden]{display:none!important}
+@media(min-width:960px){.cycle-layout{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start}.plot svg{height:330px}.profile svg{height:230px}.feature-chart{max-width:760px}.feature-chart svg{height:500px}}
+@media(max-width:520px){body{font-size:13px}.tabs button{font-size:13px}.controls{gap:10px}.controls .download{margin-left:0}.controls label{flex:1 1 120px}.controls label.check{flex:1 1 100%}.plot svg{height:270px}h2{font-size:17px}th,td{padding:8px 5px}.legend{gap:6px 12px}.scores{gap:6px}.scores button{font-size:11px;padding:4px 6px}}
+@media(prefers-reduced-motion:no-preference){button,select{transition:border-color .15s ease-out,background-color .15s ease-out}}
+@media print{.controls,.tabs,.inspect,.footer{display:none}.chart-scroll,.table-scroll{overflow:visible}section{break-inside:avoid}}
+</style>
+</head>
+<body><main>
+<p>Explore <strong>similar battery cycles</strong> and <strong>related features</strong>. Clusters use measured features; state of health (SoH) describes the groups afterward.</p>
+<div class="tabs" role="tablist" aria-label="Clustering views">
+ <button id="cycles-tab" role="tab" aria-selected="true" aria-controls="cycles-panel">Similar cycles</button>
+ <button id="features-tab" role="tab" aria-selected="false" aria-controls="features-panel" tabindex="-1">Related features</button>
+</div>
+<div class="controls">
+ <label>Battery scope<select id="battery"><option value="ALL">All four batteries</option></select></label>
+ <label class="check"><input id="interval" type="checkbox" checked> Include discharge interval</label>
+ <button class="download" id="download" type="button">Download current assignments</button>
+</div>
+<p id="coverage" class="note" aria-live="polite"></p>
+<div id="cycles-panel" role="tabpanel" aria-labelledby="cycles-tab">
+ <section aria-labelledby="cycle-title">
+ <h2 id="cycle-title">Which cycles look alike across their features?</h2>
+ <p class="muted">Nearby dots have similar feature patterns in this compressed map. The groups are fitted using all selected features.</p>
+ <div class="controls">
+  <label>Number of groups<select id="k"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
+  <label>Color cycles by<select id="color"><option value="cluster">Cluster</option><option value="battery">Battery</option><option value="soh">State of health</option></select></label>
+  <label>Map range<select id="range"><option value="all">All included cycles</option><option value="central">Central 98% (cropped)</option></select></label>
+ </div>
+ <div class="cycle-layout">
+  <div class="plot">
+   <div class="legend" id="legend" aria-label="Plot colors"></div>
+   <svg id="map" role="img" aria-label="Principal component map of cycle clusters"></svg>
+   <p id="variance" class="note"></p>
+   <label class="inspect">Inspect a cycle<select id="inspect"><option value="">Choose a cycle…</option></select></label>
+   <p id="cycle-detail" class="readout" aria-live="polite">Hover or select a dot; use the cycle menu for keyboard access.</p>
+  </div>
+  <div>
+   <h3>How do the groups differ?</h3>
+   <p class="note">Select a group to highlight its cycles. Mean SoH is a description, not a cluster input.</p>
+   <div class="table-scroll"><table><caption class="note" style="text-align:left" id="summary-caption">Current cluster composition</caption><thead><tr><th>Group</th><th class="count">Cycles</th><th class="count">Mean SoH</th><th>Battery composition</th></tr></thead><tbody id="summary"></tbody></table></div>
+   <p id="interpretation" style="margin-top:12px;font-size:13px" aria-live="polite"></p>
+  </div>
+ </div>
+ </section>
+ <section aria-labelledby="profile-title">
+  <h3 id="profile-title">Which measurements distinguish each group?</h3>
+  <p class="note">Group means in standard deviations from this scope’s average. Blue = lower; orange = higher. Scroll sideways on small screens; select a cell for its actual value.</p>
+  <div class="chart-scroll profile"><svg id="profiles" role="group" aria-label="Cluster means of standardized features"></svg></div>
+  <p id="profile-detail" class="note" aria-live="polite">Zero means the group average matches the overall feature average.</p>
+ </section>
+ <section class="reading" aria-labelledby="separation-title">
+  <h3 id="separation-title">Check separation before trusting a grouping</h3>
+  <div class="scores" id="scores" aria-label="Silhouette by number of groups"></div>
+  <p id="separation" class="note"></p>
+  <p class="note">Silhouette ranges from −1 to +1. Higher means more separated in feature space; near zero means overlap. Three groups is a starting view. A higher score can still isolate a few long-interval cycles.</p>
+ </section>
+</div>
+<div id="features-panel" role="tabpanel" aria-labelledby="features-tab" hidden>
+ <section aria-labelledby="feature-title">
+ <h2 id="feature-title">Which features carry a similar pattern?</h2>
+ <p class="muted">The tree groups strong relationships, including features that move in opposite directions. The heatmap keeps their direction visible.</p>
+ <div class="controls"><label>Feature groups<select id="feature-k"><option>2</option><option>3</option><option selected>4</option><option>5</option></select></label></div>
+ <p class="note">Spearman ρ: blue = inverse (−1); neutral = weak (0); orange = same direction (+1). Rows and columns use the same numbered features. Select a square for details.</p>
+ <div class="chart-scroll feature-chart"><svg id="feature-map" role="group" aria-label="Hierarchically ordered signed feature correlation heatmap"></svg></div>
+ <div class="pair-detail" id="pair-detail" aria-live="polite"></div>
+ <div id="feature-groups" class="group-members"></div>
+ <p id="feature-insight" class="note"></p>
+ <p class="note">Tree distance = 1 − |ρ|, averaged between groups. A shorter merge means a stronger shared pattern; sharing a group does not make measurements interchangeable.</p>
+ </section>
+</div>
+<details id="method"><summary>How this was computed, and what the groups mean</summary><ul id="method-list"></ul><ul id="caveat-list"></ul><p id="source"></p></details>
+<details><summary>Feature names and units</summary><div class="table-scroll"><table class="dictionary"><thead><tr><th>Feature</th><th>Measurement</th><th>Axis / unit</th></tr></thead><tbody id="dictionary"></tbody></table></div></details>
+<p class="footer">632 observed cycles from four NASA cells. All cells are exploratory; groups describe these observations and do not establish causes or predictive accuracy. <a href="scatterplots.html">Feature–SoH scatterplots</a> · <a href="../../Reports/clustering.md">Written findings</a> · <a href="../../Reports/clustering.json">Full-precision results</a></p>
+<noscript>This report needs JavaScript to draw the clusters. Open clustering.md for the written findings.</noscript>
+</main>
+<script>
+'use strict';
+const D=__DATA__;
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const state={view:'cycles',battery:'ALL',variant:'all',k:3,featureK:4,color:'cluster',range:'all',highlight:null,selected:null};
+const palette=Array.from({length:6},(_,i)=>`var(--chart-${i+1})`);
+const names=Object.fromEntries(D.features.map(f=>[f[0],f[1]]));
+const short={t_cc:'CC duration',t_cv:'CV duration',dq_dv_peak:'dQ/dV peak',v_at_peak:'Peak voltage',delta_T_max:'Temp. rise',delta_V_ohmic:'Voltage drop',Re:'Re',Rct:'Rct',rest_time_hours:'Discharge interval'};
+function svg(tag,attrs={},text){const node=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))node.setAttribute(k,v);if(text!==undefined)node.textContent=text;return node;}
+function text(id,value){$(id).textContent=value;}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function number(value,decimals=1){return value.toLocaleString('en-US',{maximumFractionDigits:decimals,minimumFractionDigits:decimals});}
+function signed(value,decimals=2){return(value>0?'+':'')+number(value,decimals);}
+function fit(){return D.scopes[state.battery][state.variant];}
+function cut(){return fit().cuts[String(state.k)];}
+function colorValue(value,limit=1){const strength=Math.min(Math.abs(value)/limit,1);return `color-mix(in srgb, var(--chart-${value<0?1:2}) ${strength*100}%, var(--card))`;}
+function colorText(value,limit=1){return Math.abs(value)/limit>.68?'#fff':'var(--foreground)';}
+function groupColor(c){return palette[c%palette.length];}
+function pointColor(row,label){return state.color==='cluster'?groupColor(label):state.color==='battery'?groupColor(D.batteries.indexOf(row.battery_id)):`color-mix(in srgb,var(--chart-2) ${Math.max(0,Math.min(100,(row.soh-55)/50*100))}%,var(--chart-1))`;}
+function extent(values){const low=Math.min(...values),high=Math.max(...values),pad=(high-low||1)*.065;return[low-pad,high+pad];}
+function quantile(values,p){const x=[...values].sort((a,b)=>a-b),n=(x.length-1)*p;return x[Math.floor(n)]+(x[Math.ceil(n)]-x[Math.floor(n)])*(n-Math.floor(n));}
+function activate(node,action){node.addEventListener('click',action);node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}});}
+function showCycle(sourceIndex){
+ state.selected=sourceIndex;const f=fit(),position=f.indices.indexOf(sourceIndex);
+ if(position<0)return;
+ const row=D.rows[sourceIndex],label=cut().labels[position];$('inspect').value=String(sourceIndex);
+ text('cycle-detail',`${row.battery_id} · cycle ${row.cycle} · Group ${label+1} · SoH ${number(row.soh)}% · discharge interval ${number(row.rest_time_hours,2)} h`);
+ for(const point of document.querySelectorAll('#map .point')){const chosen=Number(point.dataset.source)===sourceIndex;point.setAttribute('r',chosen?5:3);point.setAttribute('stroke',chosen?'var(--foreground)':'none');}
+}
+function drawMap(){
+ const f=fit(),current=cut(),plot=$('map'),scores=f.projection.scores;plot.replaceChildren();
+ const width=Math.max(plot.clientWidth,270),height=plot.clientHeight||300,left=47,right=15,top=12,bottom=45;
+ plot.setAttribute('viewBox',`0 0 ${width} ${height}`);
+ const xs=scores.map(p=>p[0]),ys=scores.map(p=>p[1]);
+ const xr=state.range==='all'?extent(xs):extent([quantile(xs,.01),quantile(xs,.99)]),yr=state.range==='all'?extent(ys):extent([quantile(ys,.01),quantile(ys,.99)]);
+ const sx=x=>left+(x-xr[0])/(xr[1]-xr[0])*(width-left-right),sy=y=>top+(yr[1]-y)/(yr[1]-yr[0])*(height-top-bottom);
+ plot.append(svg('desc',{},`${f.indices.length} complete cycles, ${state.k} groups from Ward clustering. Colors show ${state.color}.`));
+ const defs=svg('defs'),clip=svg('clipPath',{id:'map-clip'});clip.append(svg('rect',{x:left,y:top,width:width-left-right,height:height-top-bottom}));defs.append(clip);plot.append(defs);
+ for(let i=0;i<=4;i++){
+  const x=xr[0]+(xr[1]-xr[0])*i/4,y=yr[0]+(yr[1]-yr[0])*i/4;
+  plot.append(svg('line',{x1:left,y1:sy(y),x2:width-right,y2:sy(y),stroke:'var(--border)','stroke-width':.7}));
+  plot.append(svg('text',{x:left-7,y:sy(y)+4,'text-anchor':'end'},number(y)));
+  plot.append(svg('text',{x:sx(x),y:height-bottom+18,'text-anchor':'middle'},number(x)));
+ }
+ const dots=svg('g',{'clip-path':'url(#map-clip)'});let outside=0;
+ scores.forEach((p,i)=>{
+  if(p[0]<xr[0]||p[0]>xr[1]||p[1]<yr[0]||p[1]>yr[1])outside++;
+  const source=f.indices[i],row=D.rows[source],label=current.labels[i];
+  const node=svg('circle',{cx:sx(p[0]),cy:sy(p[1]),r:state.selected===source?5:3,fill:pointColor(row,label),opacity:(state.highlight===null||state.highlight===label)? .73 : .1,class:'point','data-source':source});
+  node.append(svg('title',{},`${row.battery_id}, cycle ${row.cycle}; Group ${label+1}; SoH ${number(row.soh)}%`));
+  node.addEventListener('click',()=>showCycle(source));node.addEventListener('pointerenter',()=>showCycle(source));dots.append(node);
+ });plot.append(dots);
+ const variance=f.projection.explained_variance_ratio;
+ plot.append(svg('text',{x:left+(width-left-right)/2,y:height-5,'text-anchor':'middle'},`PC1 · ${number(variance[0]*100)}%`));
+ plot.append(svg('text',{x:12,y:top+(height-top-bottom)/2,'text-anchor':'middle',transform:`rotate(-90 12 ${top+(height-top-bottom)/2})`},`PC2 · ${number(variance[1]*100)}%`));
+ text('variance',`PCA retains ${number((variance[0]+variance[1])*100)}% of feature variation in two axes; ${number((1-variance[0]-variance[1])*100)}% is outside this view.${state.range==='central'?` ${outside} cycles lie outside this cropped view; clustering is unchanged.`:''}`);
+ $('legend').replaceChildren();
+ if(state.color==='soh'){
+  const low=document.createElement('span'),bar=document.createElement('i'),high=document.createElement('span');low.textContent='55%';high.textContent='105% SoH';bar.className='gradient';$('legend').append(low,bar,high);
+ }else{
+  const items=state.color==='battery'?D.batteries:Array.from({length:state.k},(_,i)=>`Group ${i+1}`);
+  items.forEach((label,i)=>{const item=document.createElement('span'),swatch=document.createElement('i');swatch.className='dot';swatch.style.background=groupColor(i);item.append(swatch,document.createTextNode(label));$('legend').append(item);});
+ }
+ const selected=$('inspect').value;
+ $('inspect').innerHTML='<option value="">Choose a cycle…</option>'+f.indices.map(i=>`<option value="${i}">${D.rows[i].battery_id} · cycle ${D.rows[i].cycle}</option>`).join('');
+ if(f.indices.includes(Number(selected))&&selected!=='')$('inspect').value=selected;
+ if(state.selected!==null&&f.indices.includes(state.selected))showCycle(state.selected);
+}
+function drawSummary(){
+ const current=cut();
+ $('summary').innerHTML=current.groups.map(g=>`<tr><td><button type="button" data-group="${g.cluster}" aria-pressed="${state.highlight===g.cluster}"><i class="dot" style="background:${groupColor(g.cluster)}"></i> Group ${g.cluster+1}</button></td><td class="count">${g.n}</td><td class="count">${number(g.soh_mean)}%<small>${number(g.soh_range[0])}–${number(g.soh_range[1])}% range</small></td><td>${Object.entries(g.batteries).filter(([,n])=>n).map(([b,n])=>`${b}: ${n}`).join('<br>')}</td></tr>`).join('');
+ const mixed=current.groups.filter(g=>Object.values(g.batteries).filter(n=>n>0).length>1).length;
+ const singleBattery=current.groups.filter(g=>Object.values(g.batteries).filter(n=>n>0).length===1);
+ const tiny=current.groups.filter(g=>g.n<5);
+ let reading=state.battery==='ALL'?`${mixed} of ${state.k} groups mix batteries. `:'Groups describe changes within this battery. ';
+ if(state.battery==='ALL'&&singleBattery.length)reading+=singleBattery.map(g=>`Group ${g.cluster+1} contains only ${Object.entries(g.batteries).find(([,n])=>n>0)[0]}. `).join('');
+ reading+='Differences can reflect aging, operating conditions and measurement choices.';
+ if(tiny.length)reading+=` ${tiny.map(g=>`Group ${g.cluster+1} has ${g.n} cycle${g.n===1?'':'s'}`).join('; ')}: inspect small groups before treating them as a pattern.`;
+ text('interpretation',reading);
+ $('scores').innerHTML=Object.entries(fit().cuts).map(([k,c])=>`<button data-k="${k}" type="button" aria-pressed="${Number(k)===state.k}">${k} groups · ${number(c.silhouette,3)}</button>`).join('');
+ text('separation',`Current silhouette: ${number(current.silhouette,3)} · smallest group: ${current.smallest_group} cycle${current.smallest_group===1?'':'s'} · computed in ${fit().features.length} dimensions.`);
+}
+function drawProfiles(){
+ const f=fit(),current=cut(),plot=$('profiles');plot.replaceChildren();
+ const width=690,left=80,top=53,cell=(width-left-10)/f.features.length,rowHeight=32,barY=top+state.k*rowHeight+27,height=barY+26;
+ plot.setAttribute('viewBox',`0 0 ${width} ${height}`);plot.style.height=`${Math.max(175,height)}px`;
+ f.features.forEach((key,i)=>{const node=svg('text',{x:left+(i+.5)*cell,y:19,'text-anchor':'middle'});const parts=short[key].split(' ');if(parts.length>1){node.append(svg('tspan',{x:left+(i+.5)*cell,dy:0},parts.slice(0,-1).join(' ')));node.append(svg('tspan',{x:left+(i+.5)*cell,dy:15},parts.at(-1)));}else node.textContent=short[key];plot.append(node);});
+ current.groups.forEach((g,j)=>{
+  plot.append(svg('text',{x:left-10,y:top+j*rowHeight+20,'text-anchor':'end'},`Group ${j+1}`));
+  g.centroid_z.forEach((value,i)=>{
+   const label=`Group ${j+1}: ${names[f.features[i]]}; mean z-score ${signed(value)}; observed mean ${number(g.centroid_raw[i],4)}`;
+   const rect=svg('rect',{x:left+i*cell+1,y:top+j*rowHeight+1,width:cell-2,height:rowHeight-2,fill:colorValue(value,2.5),tabindex:0,role:'button','aria-label':label});
+   rect.append(svg('title',{},label));activate(rect,()=>text('profile-detail',`${label}. ${D.features.find(x=>x[0]===f.features[i])[2]}.`));plot.append(rect);
+   const t=svg('text',{x:left+(i+.5)*cell,y:top+j*rowHeight+20,'text-anchor':'middle','pointer-events':'none'},signed(value,1));t.style.fill=colorText(value,2.5);plot.append(t);
+  });
+ });
+ for(let i=0;i<=20;i++)plot.append(svg('rect',{x:left+i*10,y:barY,width:11,height:8,fill:colorValue((i-10)/4,2.5)}));
+ plot.append(svg('text',{x:left,y:barY+23},'−2.5 SD'));
+ plot.append(svg('text',{x:left+100,y:barY+23,'text-anchor':'middle'},'0'));
+ plot.append(svg('text',{x:left+210,y:barY+23,'text-anchor':'end'},'+2.5 SD'));
+}
+function featurePair(i,j){
+ const f=fit(),a=f.features[i],b=f.features[j],rho=f.feature_rho[i][j];
+ text('pair-detail',i===j?`${names[a]} compared with itself: ρ = 1.00 by definition.`:`${names[a]} ↔ ${names[b]}: ρ = ${signed(rho,3)} across ${f.indices.length} complete cycles. ${Math.abs(rho)<.2?'Little monotonic association in this scope.':rho>0?'Higher ranks tend to occur together.':'Higher ranks of one tend to accompany lower ranks of the other.'} This is descriptive association.`);
+}
+function drawFeatures(){
+ const f=fit(),order=f.feature_order,count=order.length,labels=f.feature_cuts[String(state.featureK)],groupOrder=[...new Set(order.map(i=>labels[i]))];
+ const plot=$('feature-map');plot.replaceChildren();
+ const left=146,top=140,cell=43,width=left+count*cell+14,height=top+count*cell+43;
+ plot.setAttribute('viewBox',`0 0 ${width} ${height}`);
+ const xs=Object.fromEntries(order.map((i,pos)=>[i,left+(pos+.5)*cell]));
+ const ymax=Math.max(...f.feature_tree.map(row=>row[2]))||1,positions={};
+ order.forEach(i=>positions[i]=[xs[i],99]);
+ f.feature_tree.forEach((row,i)=>{const a=positions[row[0]],b=positions[row[1]],y=99-row[2]/ymax*82;plot.append(svg('path',{d:`M ${a[0]} ${a[1]} V ${y} H ${b[0]} V ${b[1]}`,fill:'none',stroke:'var(--muted)','stroke-width':1.2}));positions[count+i]=[(a[0]+b[0])/2,y];});
+ plot.append(svg('text',{x:1,y:25},'Feature tree'));
+ plot.append(svg('text',{x:1,y:43},'shorter merge ='));
+ plot.append(svg('text',{x:1,y:59},'stronger |ρ|'));
+ order.forEach((i,pos)=>{
+  const group=groupOrder.indexOf(labels[i]);
+  plot.append(svg('rect',{x:left+pos*cell+1,y:107,width:cell-2,height:7,fill:groupColor(group)}));
+  plot.append(svg('text',{x:left+(pos+.5)*cell,y:132,'text-anchor':'middle'},pos+1));
+  plot.append(svg('text',{x:left-10,y:top+pos*cell+26,'text-anchor':'end'},`${pos+1}  ${short[f.features[i]]}`));
+  order.forEach((j,col)=>{
+   const rho=f.feature_rho[i][j],label=`${names[f.features[i]]} versus ${names[f.features[j]]}: Spearman ${signed(rho,3)}`;
+   const rect=svg('rect',{x:left+col*cell+1,y:top+pos*cell+1,width:cell-2,height:cell-2,fill:colorValue(rho),tabindex:0,role:'button','aria-label':label});
+   rect.append(svg('title',{},label));activate(rect,()=>featurePair(i,j));plot.append(rect);
+   const t=svg('text',{x:left+(col+.5)*cell,y:top+pos*cell+26,'text-anchor':'middle','pointer-events':'none'},number(rho,2));t.style.fill=colorText(rho);plot.append(t);
+  });
+ });
+ const barY=top+count*cell+14;
+ for(let i=0;i<=20;i++)plot.append(svg('rect',{x:left+i*9,y:barY,width:10,height:8,fill:colorValue((i-10)/10)}));
+ plot.append(svg('text',{x:left-8,y:barY+8,'text-anchor':'end'},'−1'));
+ plot.append(svg('text',{x:left+90,y:barY+24,'text-anchor':'middle'},'0'));
+ plot.append(svg('text',{x:left+199,y:barY+8},'+1'));
+ $('feature-groups').innerHTML=groupOrder.map((label,index)=>`<p><strong><i class="group-line" style="background:${groupColor(index)}"></i>Group ${index+1}</strong>${order.filter(i=>labels[i]===label).map(i=>escapeHtml(names[f.features[i]])).join(' · ')}</p>`).join('');
+ let pairs=[];for(let i=0;i<count;i++)for(let j=i+1;j<count;j++)pairs.push({i,j,rho:f.feature_rho[i][j]});pairs.sort((a,b)=>Math.abs(b.rho)-Math.abs(a.rho));
+ featurePair(pairs[0].i,pairs[0].j);
+ const negative=[...pairs].filter(p=>p.rho<0).sort((a,b)=>a.rho-b.rho)[0];
+ let insight=`Strongest pair: ${names[f.features[pairs[0].i]]} and ${names[f.features[pairs[0].j]]} (ρ ${signed(pairs[0].rho,3)}). `;
+ if(negative)insight+=`Strongest inverse pair: ${names[f.features[negative.i]]} and ${names[f.features[negative.j]]} (ρ ${signed(negative.rho,3)}). `;
+ const interval=f.features.indexOf('rest_time_hours');
+ if(interval>=0)insight+=`The interval’s largest |ρ| with another feature is ${number(Math.max(...f.feature_rho[interval].filter((_,i)=>i!==interval).map(Math.abs)),3)}.`;
+ text('feature-insight',insight);
+}
+function draw(){
+ const f=fit();
+ text('coverage',`${f.indices.length} of ${f.n_input} cycles included · ${f.excluded.length} excluded for missing charge features · ${f.features.length} features · standardized and refitted ${state.battery==='ALL'?'across all batteries':'within '+state.battery}. ${state.battery!=='ALL'?'Axes and group numbers are local to this fit.':''}`);
+ if(state.view==='cycles'){drawMap();drawSummary();drawProfiles();}else drawFeatures();
+}
+function switchView(view){state.view=view;for(const name of ['cycles','features']){const active=name===view;$(name+'-tab').setAttribute('aria-selected',String(active));$(name+'-tab').tabIndex=active?0:-1;$(name+'-panel').hidden=!active;}draw();}
+function download(){
+ const f=fit(),current=cut(),headers=state.view==='cycles'?['battery_id','cycle','included','exclusion_reason','cluster','soh_percent','pc1','pc2']:['feature','group',...f.features];
+ let records;
+ if(state.view==='cycles'){
+  const positions=new Map(f.indices.map((index,j)=>[index,j]));
+  records=D.rows.map((r,index)=>({r,index})).filter(({r})=>state.battery==='ALL'||r.battery_id===state.battery).map(({r,index})=>{const j=positions.get(index),included=j!==undefined;return[r.battery_id,r.cycle,included,included?'':'missing observed charge features',included?current.labels[j]+1:'',r.soh,...(included?f.projection.scores[j]:['',''])];});
+ }else records=f.features.map((key,i)=>[key,f.feature_cuts[String(state.featureK)][i]+1,...f.feature_rho[i]]);
+ const csv=[headers,...records].map(row=>row.map(value=>`"${String(value).replaceAll('"','""')}"`).join(',')).join('\r\n')+'\r\n';
+ const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=url;a.download=`battery-${state.view}-${state.battery}-${state.variant}-k${state.view==='cycles'?state.k:state.featureK}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+for(const b of D.batteries){const option=document.createElement('option');option.value=b;option.textContent=b;$('battery').append(option);}
+$('battery').addEventListener('change',e=>{state.battery=e.target.value;state.highlight=null;state.selected=null;text('cycle-detail','Hover or select a dot; use the cycle menu for keyboard access.');draw();});
+$('interval').addEventListener('change',e=>{state.variant=e.target.checked?'all':'without_interval';state.highlight=null;state.selected=null;text('profile-detail','Zero means the group average matches the overall feature average.');draw();});
+for(const id of ['k','color','range'])$(id).addEventListener('change',e=>{state[id]=id==='k'?Number(e.target.value):e.target.value;if(id==='k')state.highlight=null;draw();});
+$('feature-k').addEventListener('change',e=>{state.featureK=Number(e.target.value);draw();});
+$('inspect').addEventListener('change',e=>{if(e.target.value!=='')showCycle(Number(e.target.value));});
+$('summary').addEventListener('click',e=>{const button=e.target.closest('[data-group]');if(button){const group=Number(button.dataset.group);state.highlight=state.highlight===group?null:group;drawMap();drawSummary();document.querySelector(`#summary [data-group="${group}"]`).focus({preventScroll:true});}});
+$('scores').addEventListener('click',e=>{const button=e.target.closest('[data-k]');if(button){state.k=Number(button.dataset.k);state.highlight=null;$('k').value=String(state.k);draw();document.querySelector(`#scores [data-k="${state.k}"]`).focus({preventScroll:true});}});
+for(const view of ['cycles','features'])$(view+'-tab').addEventListener('click',()=>switchView(view));
+document.querySelector('.tabs').addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const view=e.key==='Home'?'cycles':e.key==='End'?'features':state.view==='cycles'?'features':'cycles';switchView(view);$(view+'-tab').focus();}});
+$('download').addEventListener('click',download);
+$('method-list').innerHTML=D.method.map(v=>`<li>${escapeHtml(v)}</li>`).join('');
+$('caveat-list').innerHTML=D.caveats.map(v=>`<li>${escapeHtml(v)}</li>`).join('');
+$('dictionary').innerHTML=D.features.map(f=>`<tr><td>${escapeHtml(f[0])}</td><td>${escapeHtml(f[1])}</td><td>${escapeHtml(f[2])}</td></tr>`).join('');
+text('source',`Source: ${D.source.path} · SHA-256 ${D.source.sha256}. Display data are rounded to six decimals; clustering.json and the saved CSVs retain full scientific precision. No interpolation or predictive model fitting.`);
+let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(draw,100);});
+draw();
+</script>
+</body></html>

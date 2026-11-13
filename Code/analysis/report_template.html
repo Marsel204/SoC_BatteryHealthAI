@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battery features and capacity · early analysis</title>
+<style>
+:root{color-scheme:light dark;--foreground:light-dark(#192431,#e5eaf0);--muted:light-dark(#556272,#b0bcc9);--card:light-dark(#f4f6f8,#1d2630);--border:light-dark(#d7dee5,#3e4b58);--primary:light-dark(#2266a3,#8dc2f2);--warning-surface:light-dark(#fff3dc,#352b18);--warning-foreground:light-dark(#6a4810,#edc47a);--radius:10px;--font-sans:system-ui,sans-serif;--font-mono:ui-monospace,monospace}
+*{box-sizing:border-box}html,body{margin:0;color:var(--foreground);font:14px/1.55 var(--font-sans)}main{max-width:1020px;margin:0 auto}h1{font-size:24px;line-height:1.25;margin:0 0 8px}h2{font-size:18px;margin:23px 0 8px}p{margin:8px 0}.muted{color:var(--muted)}.panel{background:var(--card);border-radius:var(--radius);padding:16px;margin:14px 0}.controls{display:grid;grid-template-columns:2fr 1fr 1.5fr;gap:12px}label{display:block;font-size:12px;color:var(--muted)}select{display:block;width:100%;font:inherit;color:var(--foreground);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px;margin-top:4px}.stats{display:flex;gap:24px;flex-wrap:wrap;margin:13px 0 0}.stats strong{font-size:18px}#chart{display:block;width:100%;height:320px;overflow:visible}svg text{font-family:var(--font-sans);fill:var(--muted);font-size:12px}.warning{background:var(--warning-surface);color:var(--warning-foreground);border-radius:var(--radius);padding:12px 16px;margin:12px 0}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13px}th,td{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:right}th:first-child{text-align:left}thead th{font-weight:650;color:var(--muted)}code{font-family:var(--font-mono);font-size:.92em}summary{cursor:pointer;font-weight:600;padding:8px 0}li{margin:5px 0}a{color:var(--primary)}.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}.swatch{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.note{font-size:12px}.footer{margin:20px 0;color:var(--muted);font-size:12px;overflow-wrap:anywhere}@media(max-width:580px){.controls{grid-template-columns:1fr}.stats{gap:16px}h1{font-size:21px}#chart{height:290px}th,td{padding:7px}}
+</style>
+<main>
+<h1>Charging duration and capacity peak track battery capacity</h1>
+<p class="muted">632 aligned cycles · 4 batteries · 9 features · exploratory analysis, with no predictive model training</p>
+<p>Each dot below is one cycle. Move between features and batteries to see whether the relationship keeps the same direction. Capacity is the measured label. Your code calculates SoH as capacity ÷ 2 Ah × 100.</p>
+<div class="panel">
+<div class="controls">
+<label>Feature<select id="feature">
+<option value="t_cc">CC charge duration · t_cc</option><option value="dq_dv_peak">Incremental-capacity peak · dq_dv_peak</option>
+<option value="t_cv">CV charge duration · t_cv</option><option value="v_at_peak">Peak voltage · v_at_peak</option>
+<option value="delta_T_max">Discharge temperature rise · delta_T_max</option><option value="delta_V_ohmic">Initial voltage drop · delta_V_ohmic</option>
+<option value="Re">Electrolyte resistance · Re</option><option value="Rct">Charge-transfer resistance · Rct</option>
+<option value="rest_time_hours">Interval between discharges · rest_time_hours</option></select></label>
+<label>Battery<select id="battery"><option value="B0005">B0005</option><option>B0006</option><option>B0007</option><option>B0018</option><option value="ALL">All batteries</option></select></label>
+<label>Data version<select id="version"><option value="observed_flagged">Observed; charge flags omitted</option><option value="repository_csv">Existing processed CSV</option><option value="prior_impedance">Observed; prior EIS start</option></select></label>
+</div>
+<div class="stats" aria-live="polite"><span>Spearman ρ <strong id="rho"></strong></span><span>Pearson r <strong id="pearson"></strong></span><span>Valid cycles <strong id="pairs"></strong></span></div>
+<svg id="chart" role="img" aria-label="Feature versus measured discharge capacity"></svg>
+<div class="legend" id="legend"></div>
+<p id="context" class="note muted" aria-live="polite"></p>
+</div>
+<p><strong>Read the numbers:</strong> near +1 means higher feature values tend to accompany higher capacity. Near −1 means higher values tend to accompany lower capacity. Near 0 means little monotonic association. A strong correlation does not prove cause or performance on a new battery.</p>
+<h2>Does the relationship agree across batteries?</h2>
+<div class="scroll"><table><thead><tr><th scope="col">Feature</th><th scope="col">B0005</th><th scope="col">B0006</th><th scope="col">B0007</th><th scope="col">B0018</th><th scope="col">Pooled</th></tr></thead><tbody>__ROWS__</tbody></table></div>
+<p class="note muted">Spearman correlations for observed features, with five flagged charge cycles omitted from the four charge-feature calculations. EIS rows reproduce the nearest-sweep alignment and include future measurements. Pair counts and timing-aware alternatives are in the interactive controls and CSV.</p>
+<div class="warning"><strong>Repair the data before training.</strong> Five cycles contain filled-in charge features. The original peak-voltage fallback remains in those rows. Nearest EIS starts after discharge begins in <strong>__FUTURE_DIS__/632</strong> rows, and after charging ends in <strong>__FUTURE_CHARGE__/632</strong> rows. For an end-of-charge prediction, discharge temperature rise and the initial discharge voltage drop are also unavailable.</div>
+<details><summary>What these results suggest</summary><ul>
+<li><code>t_cc</code> and <code>dq_dv_peak</code> are strong candidates for further validation, but they also correlate strongly with each other (ρ +0.932 to +0.996). Test their additional value later.</li>
+<li>Some association reflects shared aging trends. For consecutive changes, correlations fall to +0.075–+0.361 for <code>t_cc</code> and +0.475–+0.633 for <code>dq_dv_peak</code>. These diagnostics answer a different question and can amplify noise.</li>
+<li><code>rest_time_hours</code> has an inconsistent association and includes charging time. Reconstruct actual idle rest before interpreting it physically.</li>
+<li>Peak amplitude remains strongly associated with capacity using 5, 10 and 20 mV voltage bins. Peak location is more sensitive to extraction settings.</li>
+<li>B0006 reaches 101.26% SoH using rated 2 Ah capacity as the denominator. Those values are retained.</li></ul></details>
+<details><summary>Coverage, methods and limits</summary>
+<div class="scroll"><table><thead><tr><th>Battery</th><th>Aligned cycles</th><th>Capacity range (Ah)</th><th>Flagged charge cycles</th></tr></thead><tbody>__COVERAGE__</tbody></table></div>
+<p>The raw files contain 636 discharge records. The source loader excludes the first discharge of each cell, leaving 632. The original CSV was reproduced from the raw files and source code. The primary version masks four charge features when original t_cc &lt; 100 s or original dq_dv_peak &lt; 0.1 Ah/V, using the source screening thresholds. It preserves all cycle rows and labels and applies no interpolation.</p>
+<p>Six non-finite sensor values occur in one extra B0018 charging operation that the loader does not select for any aligned cycle. Sensor arrays in the selected charge/discharge records are finite and have matching lengths and increasing sample times. No raw sensor values were repaired.</p>
+<p>The prior-EIS alternative uses the latest sweep starting by charge completion; earlier sweeps do not exist for 57 rows. Even a past start does not prove the sweep had completed, because EIS end timestamps are unavailable here. This is a timing diagnostic.</p>
+<p>All four batteries were explored. None is an untouched test set after feature decisions based on this report. Only four independent cell trajectories are available. Cycles are temporally dependent, so naive row-level p-values and confidence intervals are omitted. Operating conditions are exported but have not been adjusted for in a multivariable analysis.</p>
+</details>
+<p class="footer">Pinned source: <a href="https://github.com/Marsel204/SoC_BatteryHealthAI/tree/__COMMIT__">__COMMIT__</a>. The full written analysis, static plots and numerical tables accompany this report. All computations are descriptive.</p>
+</main>
+<script>
+const DATA=__DATA__;
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+function element(tag,attrs={},text){const e=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;return e;}
+function format(v){return v===null||!Number.isFinite(v)?'n/a':(v>=0?'+':'')+v.toFixed(3);}
+function draw(){
+const f=$('feature').value,b=$('battery').value,v=$('version').value;
+const rows=DATA.versions[v].filter(r=>(b==='ALL'||r.battery_id===b)&&Number.isFinite(r[f])&&Number.isFinite(r.capacity));
+const stat=DATA.correlations.find(r=>r.version===v&&r.battery_id===b&&r.feature===f);
+$('rho').textContent=format(stat?.spearman_rho);$('pearson').textContent=format(stat?.pearson_r);$('pairs').textContent=rows.length;
+const svg=$('chart');svg.replaceChildren();const w=Math.max(svg.clientWidth,280),h=svg.clientHeight;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+const left=55,right=17,top=16,bottom=52,pw=w-left-right,ph=h-top-bottom;
+const log=f==='rest_time_hours',transform=x=>log?Math.log1p(x):x,inverse=x=>log?Math.expm1(x):x;
+let xmin=Math.min(...rows.map(r=>transform(r[f]))),xmax=Math.max(...rows.map(r=>transform(r[f])));
+let ymin=Math.min(...rows.map(r=>r.capacity)),ymax=Math.max(...rows.map(r=>r.capacity));
+const xp=(xmax-xmin||1)*.07,yp=(ymax-ymin||1)*.09;xmin-=xp;xmax+=xp;ymin-=yp;ymax+=yp;
+const sx=x=>left+(transform(x)-xmin)/(xmax-xmin)*pw,sy=y=>top+(ymax-y)/(ymax-ymin)*ph;
+for(let i=0;i<=4;i++){const y=ymin+(ymax-ymin)*i/4;svg.append(element('line',{x1:left,y1:sy(y),x2:w-right,y2:sy(y),stroke:'var(--border)','stroke-width':1}));svg.append(element('text',{x:left-8,y:sy(y)+4,'text-anchor':'end'},y.toFixed(2)));const tx=xmin+(xmax-xmin)*i/4;const xx=left+pw*i/4,val=inverse(tx);svg.append(element('text',{x:xx,y:h-bottom+22,'text-anchor':'middle'},Math.abs(val)>=100?Math.round(val).toLocaleString():val.toFixed(Math.abs(val)<1?3:2)));}
+svg.append(element('line',{x1:left,y1:top,x2:left,y2:h-bottom,stroke:'var(--muted)'}));svg.append(element('line',{x1:left,y1:h-bottom,x2:w-right,y2:h-bottom,stroke:'var(--muted)'}));
+for(const r of rows){const dot=element('circle',{cx:sx(r[f]),cy:sy(r.capacity),r:3.2,fill:DATA.colors[r.battery_id],opacity:.68});dot.append(element('title',{},`${r.battery_id}, cycle ${r.cycle}\n${f}: ${r[f].toPrecision(5)}\nCapacity: ${r.capacity.toFixed(4)} Ah\nSoH: ${(r.capacity*50).toFixed(2)}%`));svg.append(dot);}
+svg.append(element('text',{x:left+pw/2,y:h-5,'text-anchor':'middle'},DATA.labels[f]+(log?' · log(1+x) scale':'')));
+svg.append(element('text',{x:14,y:top+ph/2,'text-anchor':'middle',transform:`rotate(-90 14 ${top+ph/2})`},'Capacity (Ah)'));
+$('legend').replaceChildren();for(const [id,color]of Object.entries(DATA.colors)){if(b!=='ALL'&&b!==id)continue;const span=document.createElement('span');const sw=document.createElement('i');sw.className='swatch';sw.style.background=color;span.append(sw,document.createTextNode(id));$('legend').append(span);}
+let note=v==='repository_csv'?'Existing CSV includes filled-in charge features.':'Five flagged charge cycles retain their labels; their four charge features are omitted without interpolation.';
+if(['Re','Rct'].includes(f))note+=' '+(v==='prior_impedance'?'Uses latest EIS starting by charge end; completion is not established.':'Nearest EIS may start after the prediction moment; this association includes future information.');
+if(f==='delta_T_max')note+=' Requires the complete discharge: unavailable at charge completion.';
+if(f==='delta_V_ohmic')note+=' Requires the discharge load step: unavailable at charge completion.';
+if(f==='rest_time_hours')note+=' This interval includes charging and is not pure idle rest.';
+$('context').textContent=note;
+}
+for(const id of ['feature','battery','version'])$(id).addEventListener('change',draw);
+window.addEventListener('resize',draw);draw();
+</script>
+</html>

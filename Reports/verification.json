@@ -1,0 +1,18 @@
+{
+  "independent_primary_correlation_checks": 45,
+  "processed_rows": 632,
+  "unique_batteries": 4,
+  "flagged_charge_cycles": 5,
+  "raw_discharge_records": 636,
+  "csv_reconstruction_mismatches_at_1e_8": 0,
+  "future_eis_start_at_discharge": 175,
+  "future_eis_start_at_charge_end": 599,
+  "raw_nonfinite_sensor_values_in_unused_charge": 6,
+  "nonfinite_sensor_values_in_selected_operations": 0,
+  "signal_length_mismatches": 0,
+  "nonincreasing_time_steps": 0,
+  "png_figures": 9,
+  "svg_figures": 9,
+  "html_control_combinations_checked": 135,
+  "html_control_errors": []
+}
