@@ -19,8 +19,12 @@ uv pip install --python .venv/bin/python -r Code/app/requirements.txt
 .venv/bin/python Code/app/run.py            # http://127.0.0.1:8010
 ```
 
-Options: `--port`, `--host`, `--open-browser`, `--reload`. The five models are fitted once at
-start-up (about 15 s). The app needs the pinned data in `data/` and `src/` and the analysis
+Options: `--port`, `--host`, `--open-browser`, `--reload`. The five fitted models and their scalers
+are saved in [`Model/`](../../Model/README.md) as individual `.joblib` files and loaded at startup.
+Missing, damaged, or outdated artifacts are retrained (about 15 s) and saved automatically;
+the manifest checks the training data, model code, feature order, and dependency versions.
+To force retraining, run `.venv/bin/python Code/app/train_models.py` from the repository root.
+The app needs the pinned data in `data/` and `src/` and the analysis
 outputs in `Reports/` and HTML in `Web/HTML/`; if any are missing it says which, and `Code/analysis/run_eda.py` recreates
 them. It reads all analysis inputs without modifying them.
 
@@ -66,8 +70,9 @@ At start-up the app checks the processed CSV and the two loader files against `C
 `server/models.py`, the dashboard and the tests come from
 [Marsel204/SoC_BatteryHealthAI](https://github.com/Marsel204/SoC_BatteryHealthAI) at commit `043ec72`.
 `source_manifest.json` lists each file's upstream SHA-256 and what changed in the modified ones; a test
-fails if a file marked unmodified drifts. The models, API behaviour and upstream views are unchanged. What
-this app adds is `server/analysis.py`, `server/paths.py`, `static/analysis.js`, `static/analysis.css`, the
+fails if a file marked unmodified drifts. The model definitions, API responses and upstream views are unchanged.
+Startup now persists and reloads models through `server/model_store.py`. What
+this app also adds is `server/analysis.py`, `server/paths.py`, `static/analysis.js`, `static/analysis.css`, the
 two-step navigation and this README.
 
 ## Checks

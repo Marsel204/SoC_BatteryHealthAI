@@ -61,7 +61,7 @@ def main() -> int:
     print("  Data:       632 aligned cycles (B0005, B0006, B0007, B0018)")
     print("  Models:     Ridge, ElasticNet, SVR, GPR (uncertainty), XGBoost")
     print("=" * 72)
-    print("Starting up: the five models are fitted once at launch. Press CTRL+C to stop.\n")
+    print("Starting up: loading saved models from Model/ (training if needed). Press CTRL+C to stop.\n")
 
     if args.open_browser:
         threading.Thread(target=open_browser_after_delay, args=(url,), daemon=True).start()

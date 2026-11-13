@@ -9,6 +9,7 @@ upstream: package-relative imports, paths resolved through `paths` so the app re
 pinned data under analysis/source, a missing pinned CSV is an error instead of being
 rewritten, the data-analysis router, the /analysis and /learning mounts, and a
 revalidation header on UI files. The model endpoints are otherwise unchanged.
+Fitted models and scalers are now saved in Model/ and reused at startup.
 """
 
 from contextlib import asynccontextmanager
@@ -25,13 +26,10 @@ from fastapi.responses import FileResponse, RedirectResponse
 
 from . import paths
 from .analysis import build_analysis_router
+from .model_store import load_or_train_models
 from .models import (
     FEATURE_NAMES,
     RidgeBaseline,
-    ElasticNetBaseline,
-    SVRBaseline,
-    GaussianProcessModel,
-    XGBoostModel,
     BatteryLOBOEvaluator,
 )
 
@@ -60,9 +58,11 @@ class PrognosticsEngine:
         self,
         data_csv: str = str(paths.FEATURES_CSV),
         raw_dir: str = str(paths.RAW_DIR),
+        model_dir: str = str(paths.MODEL_DIR),
     ) -> None:
         self.data_csv = data_csv
         self.raw_dir = raw_dir
+        self.model_dir = model_dir
         self.df: Optional[pd.DataFrame] = None
         self.loader: Optional[NASADataLoader] = None
         self.extractor: Optional[PhysicsFeatureExtractor] = None
@@ -74,8 +74,8 @@ class PrognosticsEngine:
         self.lobo_raw_cache: Optional[Dict[str, Any]] = None
         self.aligned_cache: Dict[str, List[Any]] = {}
 
-    def initialize(self) -> None:
-        """Load dataset and fit full models."""
+    def initialize(self, *, retrain: bool = False) -> None:
+        """Load the dataset and saved models, training them when needed."""
         if not os.path.exists(self.data_csv):
             # The original app re-extracted and wrote this file. Here it is a pinned input
             # shared with the analysis, so a missing file is an error, never something to rewrite.
@@ -88,18 +88,8 @@ class PrognosticsEngine:
         self.loader = NASADataLoader(data_dir=self.raw_dir)
         self.extractor = PhysicsFeatureExtractor()
 
-        # Fit models on full dataset for live interactive inference
-        X = self.df[FEATURE_NAMES].values
-        y = self.df["soh"].values
-
-        self.ridge_model = RidgeBaseline().fit(X, y)
-        self.models = {
-            "Ridge": self.ridge_model,
-            "ElasticNet": ElasticNetBaseline().fit(X, y),
-            "SVR": SVRBaseline().fit(X, y),
-            "GPR": GaussianProcessModel().fit(X, y),
-            "XGBoost": XGBoostModel().fit(X, y),
-        }
+        self.models = load_or_train_models(self.data_csv, self.model_dir, retrain=retrain)
+        self.ridge_model = self.models["Ridge"]
 
     def get_presets(self) -> Dict[str, Dict[str, float]]:
         """Return representative physical presets across key aging regimes."""

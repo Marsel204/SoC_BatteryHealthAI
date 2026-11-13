@@ -24,7 +24,9 @@ uv pip install --python .venv/bin/python -r Code/app/requirements.txt
 .venv/bin/python Code/app/run.py
 ```
 
-Open `http://127.0.0.1:8010`. The existing five models fit once at startup.
+Open `http://127.0.0.1:8010`. The app loads five fitted models and their scalers from
+[`Model/`](../Model/README.md), retraining and saving them if the artifacts need refreshing.
+To force retraining, run `.venv/bin/python Code/app/train_models.py`.
 The standalone [English](../Web/HTML/index.html) and
 [Indonesian](../Web/HTML/index-id.html) explainers work without Python or a server.
 
