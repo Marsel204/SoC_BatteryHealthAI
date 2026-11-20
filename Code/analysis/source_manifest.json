@@ -12,25 +12,15 @@
       "path": "src/data_loader.py",
       "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/src/data_loader.py",
       "bytes": 8451,
-      "sha256": "a8457924e39bcb628b3a5305b2fd413102d1820b533c7e71641f64a7f17bf5b6"
+      "sha256": "a8457924e39bcb628b3a5305b2fd413102d1820b533c7e71641f64a7f17bf5b6",
+      "local_path": "Code/src/data_loader.py"
     },
     {
       "path": "src/feature_engineering.py",
       "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/src/feature_engineering.py",
       "bytes": 8032,
-      "sha256": "03348a862d65ca893f9229b1a17f51b87d9500273c68ee4ec9cb148bb97070cb"
-    },
-    {
-      "path": "run_pipeline.py",
-      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/run_pipeline.py",
-      "bytes": 6102,
-      "sha256": "9ace4cb62f92f10127b29c8f3e4aa2608423c660227bbc99ea434c7edf2fcafb"
-    },
-    {
-      "path": "README.md",
-      "url": "https://raw.githubusercontent.com/Marsel204/SoC_BatteryHealthAI/043ec72936025ce59a3753b31c3c3a16e531df5a/README.md",
-      "bytes": 7569,
-      "sha256": "729cc840a558f2479ccea9f2637f8aea050e556f352f451e5103b8aefcc1bf8d"
+      "sha256": "03348a862d65ca893f9229b1a17f51b87d9500273c68ee4ec9cb148bb97070cb",
+      "local_path": "Code/src/feature_engineering.py"
     },
     {
       "path": "data/raw/B0005.mat",

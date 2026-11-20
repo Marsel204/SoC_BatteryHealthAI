@@ -1,7 +1,0 @@
-# Reproducible checks write local evidence; the PR carries only source and deliverables.
-**/verification/
-**/__pycache__/
-.pytest_cache/
-*.pyc
-.venv/
-.venv-*/

@@ -1,5 +1,6 @@
 # Virtual environment
 .venv/
+.venv-*/
 venv/
 ENV/
 env/
@@ -20,3 +21,8 @@ htmlcov/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+# Disposable browser evidence and duplicate figure exports.
+**/verification/
+Reports/clustering_verification.json
+Reports/figures/*.svg

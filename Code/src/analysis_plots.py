@@ -1,6 +1,6 @@
 """Stage 4: Mathematical & Electrochemical Justification Plots and Analysis.
 
-Generates 6 publication-grade figures (300 DPI) saved to outputs/figures/:
+Generates 6 publication-grade figures (300 DPI) saved to Reports/figures/:
 1. stage1_degradation_regeneration.png: SoH degradation & rest-induced diffusion recovery.
 2. stage1_incremental_capacity_evolution.png: dQ/dV curves, peak attenuation (LAM) & peak shift (LLI).
 3. stage4_thevenin_charging_dynamics.png: Thevenin equation verification (t_cc shrinking, t_cv expanding).
@@ -18,7 +18,7 @@ import pandas as pd
 import seaborn as sns
 import shap
 
-from src.models import FEATURE_NAMES, BatteryLOBOEvaluator, RidgeBaseline, XGBoostModel, GaussianProcessModel
+from server.models import FEATURE_NAMES, BatteryLOBOEvaluator, RidgeBaseline, XGBoostModel, GaussianProcessModel
 from src.data_loader import NASADataLoader
 from src.feature_engineering import PhysicsFeatureExtractor
 
@@ -45,7 +45,7 @@ class BatteryPrognosticsVisualizer:
     def __init__(
         self,
         features_df: pd.DataFrame,
-        output_dir: str = "outputs/figures",
+        output_dir: str = "Reports/figures",
         data_dir: str = "data/raw",
     ) -> None:
         self.df = features_df.copy()

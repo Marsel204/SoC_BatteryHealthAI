@@ -353,8 +353,8 @@ def main():
     manifest = json.loads((ROOT/"source_manifest.json").read_text())
     source = REPO
     checksum_bad = [r["path"] for r in manifest["files"]
-                    if not (source/r["path"]).exists()
-                    or hashlib.sha256((source/r["path"]).read_bytes()).hexdigest() != r["sha256"]]
+                    if not (source/r.get("local_path", r["path"])).exists()
+                    or hashlib.sha256((source/r.get("local_path", r["path"])).read_bytes()).hexdigest() != r["sha256"]]
     checks = [result("source_checksums","source",not checksum_bad,
         "Every raw/source file must match the pinned SHA-256 manifest.",count=len(checksum_bad),examples=checksum_bad)]
     if checksum_bad:

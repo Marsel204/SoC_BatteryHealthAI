@@ -1,7 +1,7 @@
 """Filesystem layout shared by the server modules.
 
-The app lives in <repo>/Code/app. It reads Reports/ outputs and the original
-checksummed data/ and src/ files at repository root. All inputs are read-only.
+The app lives in <repo>/Code/app. It reads Reports/ outputs, data/ recordings,
+and the checksummed preprocessing modules in Code/src/.
 """
 from __future__ import annotations
 
@@ -22,7 +22,6 @@ SOURCE_MANIFEST = ANALYSIS_DIR / "source_manifest.json"
 # Outputs of the data analysis.
 RESULTS_DIR = PROJECT_ROOT / "Reports"
 HTML_DIR = PROJECT_ROOT / "Web" / "HTML"
-LEARNING_DIR = HTML_DIR / "learning"
 OBSERVED_CSV = RESULTS_DIR / "cycles_observed_flagged.csv"
 CORRELATIONS_CSV = RESULTS_DIR / "feature_target_correlations.csv"
 DATA_CONTRACTS_JSON = RESULTS_DIR / "data_contracts.json"
@@ -30,9 +29,9 @@ SCATTERPLOTS_PY = ANALYSIS_DIR / "scatterplots.py"
 
 # The app's own assets.
 STATIC_DIR = APP_DIR / "static"
-FIGURES_DIR = PROJECT_ROOT / "outputs" / "figures"
+FIGURES_DIR = RESULTS_DIR / "figures"
 
 # The pinned loader and feature modules import each other as `src.*`. Expose them
 # unchanged rather than keeping a second copy that could drift from the checksummed one.
-if str(SOURCE_DIR) not in sys.path:
-    sys.path.insert(0, str(SOURCE_DIR))
+if str(PROJECT_ROOT / "Code") not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT / "Code"))
