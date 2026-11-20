@@ -7,15 +7,22 @@ Stage 3: Leave-One-Battery-Out (LOBO) cross-validation & uncertainty quantificat
 Stage 4: Mathematical/electrochemical justification and publication figure generation
 """
 
-import os
 import sys
 import time
+from pathlib import Path
+
+# Use the same model classes as the app and the saved joblib artifacts.
+CODE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CODE_DIR.parent
+sys.path.insert(0, str(CODE_DIR))
+sys.path.insert(0, str(CODE_DIR / "app"))
+
 import pandas as pd
 import numpy as np
 
+from server.models import BatteryLOBOEvaluator, FEATURE_NAMES, RidgeBaseline
 from src.data_loader import NASADataLoader
 from src.feature_engineering import PhysicsFeatureExtractor
-from src.models import BatteryLOBOEvaluator, FEATURE_NAMES, RidgeBaseline
 from src.analysis_plots import BatteryPrognosticsVisualizer
 
 
@@ -30,11 +37,11 @@ def run_pipeline():
     # STAGE 1: Data Parsing & Physics-Informed Feature Extraction
     # -------------------------------------------------------------
     print("\n[STAGE 1] Loading, Aligning Operations & Extracting Physical Features...")
-    data_dir = "data/raw"
+    data_dir = str(PROJECT_ROOT / "data" / "raw")
     loader = NASADataLoader(data_dir=data_dir)
     extractor = PhysicsFeatureExtractor()
 
-    features_csv = "data/features_all_batteries.csv"
+    features_csv = PROJECT_ROOT / "data" / "features_all_batteries.csv"
     dfs = []
     for b_id in ["B0005", "B0006", "B0007", "B0018"]:
         aligned = loader.load_and_align_battery(b_id, drop_cycle_1=True)
@@ -54,7 +61,7 @@ def run_pipeline():
         dfs.append(df_b)
 
     df_all = pd.concat(dfs, ignore_index=True)
-    os.makedirs("data", exist_ok=True)
+    features_csv.parent.mkdir(parents=True, exist_ok=True)
     df_all.to_csv(features_csv, index=False)
     print(f"  Stage 1 Complete: {len(df_all)} total cycles saved to {features_csv}")
 
@@ -97,7 +104,7 @@ def run_pipeline():
     # STAGE 4: Mathematical Justification & Figures Generation
     # -------------------------------------------------------------
     print("\n[STAGE 4] Generating Publication Figures & Mathematical Justifications...")
-    visualizer = BatteryPrognosticsVisualizer(df_all, output_dir="outputs/figures", data_dir=data_dir)
+    visualizer = BatteryPrognosticsVisualizer(df_all, output_dir=str(PROJECT_ROOT / "Reports" / "figures"), data_dir=data_dir)
     saved_figures = visualizer.generate_all_figures(lobo_results)
 
     print("  Publication figures saved (300 DPI):")

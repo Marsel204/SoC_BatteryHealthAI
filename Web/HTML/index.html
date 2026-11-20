@@ -518,11 +518,11 @@ footer{margin:80px 0 0;padding-top:20px;border-top:1px solid var(--border);font-
   <figure class="fig" id="fig-modelcompare" aria-labelledby="fig-modelcompare-t"><div class="fig-head"><h3 id="fig-modelcompare-t">Model comparison</h3><p>RMSE measures prediction error in SoH percentage points; lower is better.</p></div><div class="fig-controls"></div><div class="fig-body"></div><p class="fig-note" aria-live="polite"></p><details class="twin"><summary>View the data as a table</summary><div class="twin-body"></div></details></figure>
   <figure class="fig" id="fig-modelcurve" aria-labelledby="fig-modelcurve-t"><div class="fig-head"><h3 id="fig-modelcurve-t">Predicted and measured health</h3><p>Choose a model and a held-out battery to inspect its predictions.</p></div><div class="fig-controls"></div><div class="fig-body"></div><p class="fig-note" aria-live="polite"></p><details class="twin"><summary>View the data as a table</summary><div class="twin-body"></div></details></figure>
   <p class="prose" id="conclusions"><b>Read the scores as development estimates.</b> All four cells were explored. Some inputs need discharge or later impedance data, and the training table contains interpolated charging values. These results do not establish charge-end prediction or performance on a new cell.</p>
-  <p class="fig-note">For the live simulator, run the <a href="../../Code/app/README.md">combined app</a>. Model definitions and evaluation notes are in <a href="../../Models/README.md">Models</a>.</p>
+  <p class="fig-note">For the live simulator, run the <a href="../../README.md">combined app</a>. Model definitions and evaluation notes are in <a href="../../Model/README.md">Models</a>.</p>
 </section>
 
 <details class="advanced appendix" id="appendix"><summary>Sources, reproduction and glossary</summary>
-  <p class="prose">Raw data and code are pinned to commit <code><span class="num" data-t="source_commit" data-v="043ec72">043ec72</span></code>. The <a href="../../Reports/README.md">saved reports</a> contain full-precision results; the <a href="../../Code/analysis/README.md">analysis guide</a> lists every rebuild command.</p>
+  <p class="prose">Raw data and code are pinned to commit <code><span class="num" data-t="source_commit" data-v="043ec72">043ec72</span></code>. The <a href="../../Reports/report.md">saved reports</a> contain full-precision results; the <a href="../../Code/analysis/README.md">analysis guide</a> lists every rebuild command.</p>
   <pre class="fig" style="padding:14px 18px;overflow:auto;font-size:12.5px;line-height:1.6"><code>.venv/bin/python Code/analysis/run_eda.py
 .venv/bin/python Code/analysis/validate_data.py --self-test
 .venv/bin/python Code/analysis/model_results.py

@@ -85,6 +85,6 @@ Positive values mean higher feature values accompany higher capacity. Negative v
 - `peak_bin_sensitivity.csv`: peak correlations with capacity and rank stability versus the 10 mV extraction.
 - `figures/`: PNG and SVG plots, including separate scatter grids for every battery.
 
-Reproduce with the pinned dependencies in ../Code/analysis/requirements.txt and `python Code/analysis/run_eda.py` from the project root. Missing raw files are downloaded from the pinned GitHub URLs and checked against SHA-256 hashes in ../Code/analysis/source_manifest.json.
+Reproduce with the pinned dependencies in ../requirements.txt and `python Code/analysis/run_eda.py` from the project root. Missing raw files are downloaded from the pinned GitHub URLs and checked against SHA-256 hashes in ../Code/analysis/source_manifest.json.
 
 References: [source repository](https://github.com/Marsel204/SoC_BatteryHealthAI/tree/043ec72936025ce59a3753b31c3c3a16e531df5a); [NASA field documentation](https://data.nasa.gov/dataset/li-ion-battery-aging-datasets); [Pearson](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pearsonr.html); [Spearman](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html).

@@ -33,7 +33,7 @@ from .models import (
     BatteryLOBOEvaluator,
 )
 
-# Pinned upstream modules from root src/; importing `paths` puts them on sys.path.
+# Pinned preprocessing modules in Code/src; `paths` makes them importable.
 from src.data_loader import NASADataLoader
 from src.feature_engineering import PhysicsFeatureExtractor
 
@@ -613,8 +613,18 @@ if paths.RESULTS_DIR.exists():
     app.mount("/Reports", StaticFiles(directory=str(paths.RESULTS_DIR)), name="published-reports")
 if paths.HTML_DIR.exists():
     app.mount("/Web/HTML", StaticFiles(directory=str(paths.HTML_DIR), html=True), name="published-html")
-if paths.LEARNING_DIR.exists():
-    app.mount("/learning", StaticFiles(directory=str(paths.LEARNING_DIR), html=True), name="learning-lab")
+
+
+@app.get("/learning/", include_in_schema=False)
+def serve_visualization():
+    return RedirectResponse("/Web/HTML/index.html")
+
+
+@app.get("/README.md", include_in_schema=False)
+@app.get("/Model/README.md", include_in_schema=False)
+@app.get("/Code/analysis/README.md", include_in_schema=False)
+def serve_guide(request: Request):
+    return FileResponse(paths.PROJECT_ROOT / request.url.path.lstrip("/"))
 
 
 @app.get("/api/figures")

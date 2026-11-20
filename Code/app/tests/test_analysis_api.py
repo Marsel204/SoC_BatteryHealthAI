@@ -206,16 +206,21 @@ def test_missing_pinned_table_is_an_error_and_is_never_rewritten(tmp_path):
     "/analysis/report.html",
     "/analysis/scatterplots.html",
     "/analysis/feature_target_correlations.csv",
+    "/README.md",
+    "/Model/README.md",
+    "/Code/analysis/README.md",
 ])
 def test_analysis_outputs_are_served_read_only(client, url):
     assert client.get(url).status_code == 200
     assert client.post(url).status_code in (404, 405)
 
 
-def test_learning_lab_is_served(client):
+def test_legacy_learning_url_opens_canonical_visualization(client):
     response = client.get("/learning/")
     assert response.status_code == 200
-    assert "Battery data learning lab" in response.text
+    assert response.history[0].status_code == 307
+    assert response.url.path == "/Web/HTML/index.html"
+    assert "const DATA=" in response.text
 
 
 def test_ui_files_revalidate_on_reload(client):
@@ -266,7 +271,7 @@ def test_files_marked_unmodified_still_match_upstream():
     manifest = json.loads((paths.APP_DIR / "source_manifest.json").read_text())
     assert manifest["commit"] == "043ec72936025ce59a3753b31c3c3a16e531df5a"
     unmodified = [e for e in manifest["files"] if not e["modified"]]
-    assert {Path(e["local_path"]).name for e in unmodified} >= {"models.py", "style.css", "pytest.ini"}
+    assert {Path(e["local_path"]).name for e in unmodified} >= {"models.py", "style.css"}
     for entry in manifest["files"]:
         local = paths.PROJECT_ROOT / entry["local_path"]
         assert local.exists(), entry["local_path"]

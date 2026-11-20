@@ -46,7 +46,7 @@ COLORS = dict(zip(BATTERIES, ["#2671bb", "#d47717", "#28967b", "#a05db5"]))
 def ensure_sources():
     manifest = json.loads((ROOT / "source_manifest.json").read_text())
     for record in manifest["files"]:
-        path = SOURCE / record["path"]
+        path = SOURCE / record.get("local_path", record["path"])
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
             with urllib.request.urlopen(record["url"], timeout=120) as response:
@@ -396,7 +396,7 @@ def make_report(df, raw, existing, audit, ops, corr, temporal, summary, manifest
         "- `feature_redundancy.csv`: pairwise feature correlations within each battery.",
         "- `peak_bin_sensitivity.csv`: peak correlations with capacity and rank stability versus the 10 mV extraction.",
         "- `figures/`: PNG and SVG plots, including separate scatter grids for every battery.", "",
-        "Reproduce with the pinned dependencies in ../Code/analysis/requirements.txt and `python Code/analysis/run_eda.py` from the project root. Missing raw files are downloaded from the pinned GitHub URLs and checked against SHA-256 hashes in ../Code/analysis/source_manifest.json.", "",
+        "Reproduce with the dependencies in ../requirements.txt and `python Code/analysis/run_eda.py` from the project root. Missing raw files are downloaded from the pinned GitHub URLs and checked against SHA-256 hashes in ../Code/analysis/source_manifest.json.", "",
         "References: [source repository](https://github.com/Marsel204/SoC_BatteryHealthAI/tree/"+manifest['commit']+"); [NASA field documentation](https://data.nasa.gov/dataset/li-ion-battery-aging-datasets); [Pearson](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pearsonr.html); [Spearman](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html).", ""]
     (OUT / "report.md").write_text("\n".join(md))
 
@@ -404,7 +404,7 @@ def make_report(df, raw, existing, audit, ops, corr, temporal, summary, manifest
 def main():
     OUT.mkdir(parents=True, exist_ok=True); FIG.mkdir(exist_ok=True)
     manifest = ensure_sources()
-    sys.path.insert(0, str(SOURCE))
+    sys.path.insert(0, str(REPO / "Code"))
     from src.data_loader import NASADataLoader
     from src.feature_engineering import PhysicsFeatureExtractor
     existing = pd.read_csv(SOURCE / "data/features_all_batteries.csv")

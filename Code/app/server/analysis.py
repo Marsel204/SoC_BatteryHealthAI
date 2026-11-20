@@ -92,12 +92,13 @@ def _sha256(path) -> str:
 def pinned_source_status() -> Dict[str, Any]:
     """Check that the upstream files the models and loaders use match the pinned manifest."""
     manifest = json.loads(paths.SOURCE_MANIFEST.read_text())
-    expected = {entry["path"]: entry["sha256"] for entry in manifest["files"]}
+    expected = {entry["path"]: entry for entry in manifest["files"]}
     files = []
     for relative in PINNED_SOURCE_FILES:
-        target = paths.SOURCE_DIR / relative
+        entry = expected[relative]
+        target = paths.SOURCE_DIR / entry.get("local_path", relative)
         actual = _sha256(target) if target.exists() else None
-        files.append({"path": relative, "ok": actual is not None and actual == expected.get(relative)})
+        files.append({"path": relative, "ok": actual is not None and actual == entry["sha256"]})
     return {
         "repository": manifest["repository"],
         "commit": manifest["commit"],
@@ -115,7 +116,7 @@ def pooled_charge_vif() -> Dict[str, float]:
     """Variance inflation of the four charging features on their complete cycles.
 
     VIF is the diagonal of the inverse correlation matrix. This reproduces the pooled
-    values in analysis/results/learning/feature_overlap.md (a test pins them).
+    values in Reports/learning/feature_overlap.md (a test pins them).
     """
     rows = observed_rows()
     complete = [[r[c] for c in CHARGE_FEATURES] for r in rows

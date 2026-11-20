@@ -30,7 +30,7 @@ RESULTS = REPO / "Reports"
 WEB = REPO / "Web" / "HTML"
 LEARNING = RESULTS / "learning"
 SOURCE = REPO
-sys.path.insert(0, str(SOURCE))
+sys.path.insert(0, str(REPO / "Code"))
 from src.data_loader import NASADataLoader  # noqa: E402  (pinned, checksummed originals)
 from src.feature_engineering import PhysicsFeatureExtractor  # noqa: E402
 
@@ -69,11 +69,12 @@ def clean(value, digits=6):
 def verify_pinned_source() -> dict:
     """Refuse to build on source files that differ from the checksummed manifest."""
     manifest = json.loads((ANALYSIS / "source_manifest.json").read_text())
-    expected = {f["path"]: f["sha256"] for f in manifest["files"]}
+    expected = {f["path"]: f for f in manifest["files"]}
     for relative in ["data/features_all_batteries.csv", "src/data_loader.py", "src/feature_engineering.py"] + \
             [f"data/raw/{b}.mat" for b in BATTERIES]:
-        actual = sha256(SOURCE / relative)
-        if actual != expected[relative]:
+        record = expected[relative]
+        actual = sha256(SOURCE / record.get("local_path", relative))
+        if actual != record["sha256"]:
             raise SystemExit(f"Pinned source differs from the manifest: {relative}")
     return manifest
 
@@ -547,11 +548,11 @@ def main():
     data = json.dumps(clean(payload), separators=(",", ":"), allow_nan=False).replace("<", "\\u003c")
 
     template = (content_root / "template.html").read_text()
-    license_text = (ANALYSIS / "learning" / "assets" / "OFL.txt").read_text()
+    license_text = (ROOT / "assets" / "OFL.txt").read_text()
     assert "*/" not in license_text
     css = "/* Manrope font license\n" + license_text + "\n*/\n" + (ROOT / "style.css").read_text()
     for subset in ("latin", "greek"):
-        encoded = base64.b64encode((ANALYSIS / "learning" / "assets" / f"manrope-{subset}.woff2").read_bytes()).decode()
+        encoded = base64.b64encode((ROOT / "assets" / f"manrope-{subset}.woff2").read_bytes()).decode()
         css = css.replace(f'url("assets/manrope-{subset}.woff2")', f'url("data:font/woff2;base64,{encoded}")')
 
     html = render(template, T, language)
